@@ -1,9 +1,19 @@
 {
-  "name": "vetprovieh-detail",
+  "name": "@tomuench/vetprovieh-detail",
   "description": "Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.",
+  "author": {
+    "name": "Tobias Münch",
+    "email": "tobias.muench@hs-osnabrueck.de",
+    "url": "https://github.com/Vet-ProVieh/vetprovieh-detail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Vet-ProVieh/vetprovieh-detail.git"
+  },
   "main": "vetprovieh-detail.js",
   "dependencies": {
-    "bulma": "^0.8.2"
+    "bulma": "^0.8.2",
+    "@tomuench/vetprovieh-shared": "file:../vetprovieh-shared"
   },
   "devDependencies": {
     "@polymer/polymer": "^3.0.0",

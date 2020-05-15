@@ -2,5 +2,8 @@
   "firstname": "John",
   "lastname": "Wick",
   "street": "Horseshoe Road",
-  "city": "New York"
+  "city": "New York",
+  "contact": {
+    "phone": 1234
+  }
 }
