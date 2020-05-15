@@ -242,7 +242,7 @@ class VetproviehDetail extends HTMLElement {
         if (_this.id != "new") {
             xhr.open("PUT", _this.src + "/" + _this.id);
         } else {
-            xhr.open("POST", _this.src + "/create");
+            xhr.open("POST", _this.src);
         }
         xhr.setRequestHeader('Content-Type', 'application/json');
 
