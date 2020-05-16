@@ -1,4 +1,5 @@
 import {VetproviehBinding} from '@tomuench/vetprovieh-shared';
+import {FormtValidation} from '@tomuench/formt-validation/lib/FormValidation';
 
 class VetproviehNotification extends HTMLElement {
 
@@ -291,6 +292,11 @@ class VetproviehDetail extends HTMLElement {
                 let element = this.shadowRoot.querySelector('[property="' + prefix + key + '"]');
 
                 if (element) {
+                    element.addEventListener("blur",(event) => {
+                        console.log(event.target);
+                        let validator = new FormtValidation();
+                        validator.validateElement(event.target);
+                    })
                     binding.addBinding(element, "value", "change");
                 }
             }

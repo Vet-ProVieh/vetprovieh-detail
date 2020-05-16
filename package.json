@@ -12,8 +12,10 @@
   },
   "main": "vetprovieh-detail.js",
   "dependencies": {
-    "bulma": "^0.8.2",
-    "@tomuench/vetprovieh-shared": "file:../vetprovieh-shared"
+    "@fortawesome/fontawesome-free": "^5.13.0",
+    "@tomuench/formt-validation": "file:../formt-validation",
+    "@tomuench/vetprovieh-shared": "file:../vetprovieh-shared",
+    "bulma": "^0.8.2"
   },
   "devDependencies": {
     "@polymer/polymer": "^3.0.0",
