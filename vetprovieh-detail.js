@@ -3,7 +3,7 @@ import {FormtValidation} from '@tomuench/formt-validation/lib/FormValidation';
 
 class VetproviehNotification extends HTMLElement {
 
-    static get template(){
+    static get template() {
         return `
             <style>
                 #notification {
@@ -62,7 +62,7 @@ class VetproviehNotification extends HTMLElement {
     /**
      * Show Notification for 3 seconds.
      */
-    display(){
+    display() {
         let notificationBox = this.shadowRoot.getElementById("notification");
 
         notificationBox.classList.remove("hidden");
@@ -79,7 +79,7 @@ class VetproviehNotification extends HTMLElement {
 
     }
 
-    connectedCallback(){
+    connectedCallback() {
         // Lazy creation of shadowRoot.
         if (!this.shadowRoot) {
             this.attachShadow({
@@ -218,36 +218,62 @@ class VetproviehDetail extends HTMLElement {
         abortButton.addEventListener('click', (_) => window.history.back());
     }
 
-    _showNotification(text, type="is-success"){
+    _showNotification(text, type = "is-success") {
         let notification = this.shadowRoot.getElementById("notification");
         notification.text = text;
         notification.type = type;
         notification.display();
     }
 
+    /**
+     * Save-Process
+     * @param [VetproviehDetail] _this
+     */
     save(_this) {
-        var xhr = new XMLHttpRequest();
-        xhr.onload = function () {
-            // Process our return data
-            if (xhr.status >= 200 && xhr.status < 300) {
-                // What do when the request is successful
-                console.log('success!', xhr);
-                _this._showNotification("Daten erfolgreich gespeichert");
-            } else {
-                // What do when the request fails
-                console.log('The request failed!');
-                _this._showNotification("Daten konnten nicht gespeichert werden.", "is-danger");
-            }
-        };
+        if (_this._validateForm()) {
+            var xhr = _this._buildSaveRequest();
+            xhr.onload = function () {
+                // Process our return data
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    // What do when the request is successful
+                    console.log('success!', xhr);
+                    _this._showNotification("Daten erfolgreich gespeichert");
+                } else {
+                    // What do when the request fails
+                    console.log('The request failed!');
+                    _this._showNotification("Daten konnten nicht gespeichert werden.", "is-danger");
+                }
+            };
+            xhr.send(JSON.stringify(_this._properties.currentObject));
+        }
+    }
+
+    /**
+     * Build-Save Request for Backend
+     * @returns {XMLHttpRequest}
+     * @private
+     */
+    _buildSaveRequest() {
+        let xhr = new XMLHttpRequest();
 
         if (_this.id != "new") {
-            xhr.open("PUT", _this.src + "/" + _this.id);
+            xhr.open("PUT", this.src + "/" + this.id);
         } else {
-            xhr.open("POST", _this.src);
+            xhr.open("POST", this.src);
         }
         xhr.setRequestHeader('Content-Type', 'application/json');
+        return xhr;
+    }
 
-        xhr.send(JSON.stringify(_this._properties.currentObject));
+    /**
+     * Validate the Form
+     * @returns {boolean}
+     * @private
+     */
+    _validateForm() {
+        let form = this.shadowRoot.getElementById("form");
+        let validator = new FormtValidation();
+        return validator.validateForm(form);
     }
 
     /**
@@ -274,7 +300,7 @@ class VetproviehDetail extends HTMLElement {
         var id = url.searchParams.get("id");
         this.id = id;
 
-        if(!id){
+        if (!id) {
             this.id = "new";
         }
     }
@@ -292,8 +318,7 @@ class VetproviehDetail extends HTMLElement {
                 let element = this.shadowRoot.querySelector('[property="' + prefix + key + '"]');
 
                 if (element) {
-                    element.addEventListener("blur",(event) => {
-                        console.log(event.target);
+                    element.addEventListener("blur", (event) => {
                         let validator = new FormtValidation();
                         validator.validateElement(event.target);
                     })
@@ -327,7 +352,7 @@ class VetproviehDetail extends HTMLElement {
         if (this.id && this.src) {
             var self = this;
             var endpoint = "new.json";
-            if(this.id != "new") endpoint = this.src + "/" + this.id;
+            if (this.id != "new") endpoint = this.src + "/" + this.id;
 
             fetch(endpoint)
                 .then(response => response.json())
