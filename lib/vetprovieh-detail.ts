@@ -10,7 +10,7 @@ import {VetproviehNotification} from './vetprovieh-notification';
  *
  * @customElement
  */
-class VetproviehDetail extends VetproviehElement {
+export class VetproviehDetail extends VetproviehElement {
   /**
        * Getting Template
        */
@@ -56,11 +56,12 @@ class VetproviehDetail extends VetproviehElement {
 
     /**
      * Default-Constructor
+     * @param {HTMLTemplateElement | undefined} pListTemplate
      */
-    constructor() {
+    constructor(pListTemplate: HTMLTemplateElement | undefined = undefined) {
       super();
 
-      const template = this.querySelector('template');
+      const template =  pListTemplate || this.querySelector('template');
       if (template) {
         this._detailTemplate = template.content;
       }
@@ -98,7 +99,7 @@ class VetproviehDetail extends VetproviehElement {
      * @param {string} val
      */
     set objId(val) {
-      if (val !== this.id) {
+      if (val !== this.objId) {
         this._id = val;
         this._fetchDataFromServer();
       }
@@ -278,14 +279,15 @@ class VetproviehDetail extends VetproviehElement {
        * @private
        */
     _fetchDataFromServer() {
-      if (this.id && this.src) {
+      if (this.objId && this.src) {
         const self = this;
         let endpoint = 'new.json';
-        if (this.id != 'new') endpoint = this.src + '/' + this.id;
+        if (this.objId != 'new') endpoint = this.src + '/' + this.objId;
 
         fetch(endpoint)
             .then((response) => response.json())
-            .then((data) => self.attachData(data));
+            .then((data) => self.attachData(data))
+            .catch((error) => console.log(error));
       }
     }
 
