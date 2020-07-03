@@ -1,0 +1,21 @@
+{
+  "id": null,
+  "vvvoNumber": null,
+  "name": null,
+  "contactPerson": {
+    "lastName": null,
+    "firstName": null,
+    "landline": null,
+    "mobile": null
+  },
+  "gpsCoordinates": {
+    "latitude": 1,
+    "longitude": 2
+  },
+  "address": {
+    "streetName": null,
+    "streetNumber": null,
+    "postalCode": null,
+    "city": null
+  }
+}
