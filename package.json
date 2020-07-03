@@ -14,19 +14,18 @@
   "types": "dist/vetprovieh-detail.d.ts",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.13.0",
-    "@rollup/plugin-commonjs": "^13.0.0",
-    "@rollup/plugin-node-resolve": "^8.1.0",
     "@tomuench/formt-validation": "file:../formt-validation",
     "@tomuench/vetprovieh-shared": "file:../vetprovieh-shared",
-    "bulma": "^0.8.2",
-    "rollup-plugin-typescript": "^1.0.1"
+    "bulma": "^0.8.2"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^13.0.0",
+    "@rollup/plugin-node-resolve": "^8.1.0",
+    "rollup-plugin-typescript": "^1.0.1",
     "@babel/core": "^7.10.1",
     "@babel/plugin-transform-modules-commonjs": "^7.10.1",
     "@babel/preset-env": "^7.10.1",
     "@babel/preset-typescript": "^7.10.1",
-    "@polymer/iron-demo-helpers": "^3.1.0",
     "@types/jest": "^25.2.3",
     "@types/node-fetch": "^2.5.7",
     "@typescript-eslint/eslint-plugin": "^3.0.2",
