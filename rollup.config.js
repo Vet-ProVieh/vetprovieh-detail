@@ -1,7 +1,7 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from 'rollup-plugin-typescript';
-
+import pkg from './package.json'
 
 export default {
     input: 'lib/index.ts',
@@ -28,7 +28,9 @@ export default {
             ignoreGlobal: false,  // Default: false
             // if false then skip sourceMap generation for CommonJS modules
             sourceMap: false,  // Default: true
-      
+            external: [
+                Object.keys(pkg.dependencies || {}),
+            ],
             // explicitly specify unresolvable named exports
             // (see below for more details)
             //namedExports: { 'react': ['createElement', 'Component' ] },  // Default: undefined

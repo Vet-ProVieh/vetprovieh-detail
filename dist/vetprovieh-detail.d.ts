@@ -18,7 +18,17 @@ export class VetproviehDetail extends VetproviehElement {
     _src: string;
     _id: string;
     _currentObject: {};
+    _storeElement: boolean;
     _detailTemplate: DocumentFragment;
+    /**
+     * Setting Src
+     * @param {boolean} val
+     */
+    set storeElement(arg: boolean);
+    /**
+       * @property {boolean} storeElement
+       */
+    get storeElement(): boolean;
     /**
      * Setting Src
      * @param {string} val
@@ -28,6 +38,11 @@ export class VetproviehDetail extends VetproviehElement {
        * @property {string|null} src
        */
     get src(): string;
+    /**
+     * Get Current Object
+     * @return {any}
+     */
+    get currentObject(): any;
     /**
      * Set Id of currentObject
      * @param {string} val
@@ -76,6 +91,11 @@ export class VetproviehDetail extends VetproviehElement {
        */
     attachData(data: any): void;
     /**
+     * Emitting loaded Event
+     * @param {any} data
+     */
+    _emitLoaded(data: any): void;
+    /**
        * Load ID from Parameters
        * @private
        */
@@ -93,9 +113,24 @@ export class VetproviehDetail extends VetproviehElement {
        */
     private _generateDetail;
     /**
-       * Loading Data from Remote-Server
-       * @private
-       */
+     * Overwriteable Callback
+     * @param {any} data
+     * @protected
+     */
+    protected _afterFetch(data: any): void;
+    /**
+     * Storing current Object into LocalStorage
+     */
+    _storeCurrentObject(): void;
+    /**
+     * Getting StoreKey
+     * @return {string}
+     */
+    get _storeKey(): string;
+    /**
+     * Loading Data from Remote-Server
+     * @private
+     */
     private _fetchDataFromServer;
 }
 /**

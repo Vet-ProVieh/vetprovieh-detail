@@ -3,6 +3,13 @@
  */
 class ObjectHelper {
     /**
+     * Checking if the Element is an Object
+     * @param obj
+     */
+    static isObject(obj) {
+        return obj != null && typeof (obj) === 'object';
+    }
+    /**
        * Getting Value from JSON-Object
        * @param {Indexable} object
        * @param {string} key
@@ -65,6 +72,63 @@ class ObjectHelper {
                 return value;
             }
         }).toString();
+    }
+}
+
+/**
+ * Helpers for View
+ */
+class ViewHelper {
+    /**
+       * Mark text yellow inside an element.
+       * @param {Node} element
+       * @param {string} input
+       */
+    static markElement(element, input) {
+        if (input != '') {
+            element.childNodes.forEach((n) => {
+                const value = n.nodeValue || '';
+                if (n.nodeName === '#text' && value.indexOf(input) >= 0) {
+                    element.innerHTML = n['data']
+                        .split(input)
+                        .join('<mark>' + input + '</mark>');
+                }
+                else {
+                    ViewHelper.markElement(n, input);
+                }
+            });
+        }
+    }
+    /**
+     * Getting URL-Parameter from address
+     * @param {string} key
+     * @return {string}
+     */
+    static getParameter(key) {
+        const urlString = window.location.href;
+        const url = new URL(urlString);
+        const value = url.searchParams.get(key);
+        return value;
+    }
+    /**
+       * Regex to fill keys in template
+       * @return {RegExp}
+       */
+    static get regexTemplate() {
+        return /{{([a-zA-Z0-9\.]+)}}/;
+    }
+    /**
+       * Replacing Placeholders in template from the loaded element
+       * @param {HTMLElement} template
+       * @param {Indexable} e
+       */
+    static replacePlaceholders(template, e) {
+        let match = null;
+        while (match = template.innerHTML.match(ViewHelper.regexTemplate)) {
+            let value = ObjectHelper.get(e, match[1]);
+            value = value || '';
+            template.innerHTML = template.innerHTML.replace(match[0], value);
+        }
     }
 }
 
@@ -146,6 +210,39 @@ class VetproviehBinding {
             binding.element[binding.attribute] = val;
         });
     }
+    /**
+   * Binding Form Elements
+   * @param {HTMLElement} target (Target - HTMLElement)
+   * @param {any} data (DataObject)
+   * @param {string} prefix
+   */
+    static bindFormElements(target, data, prefix = '') {
+        Object.keys(data).forEach((key) => {
+            if (ObjectHelper.isObject(data[key])) {
+                this.bindFormElements(target, data[key], key + '.');
+            }
+            else {
+                const binding = new VetproviehBinding(data, key);
+                const element = target
+                    .querySelector('[property="' + prefix + key + '"]');
+                if (element) {
+                    this._attachEventListener(element);
+                    binding.addBinding(element, 'value', 'change');
+                }
+            }
+        });
+    }
+    /**
+     * Attaching EventListener
+     * @param {HTMLElement | null} element
+     * @param {VetproviehBinding} binding
+     */
+    static _attachEventListener(element) {
+        element.addEventListener('blur', (event) => {
+            //const validator = new FormtValidation();
+            //validator.validateElement(event.target as HTMLInputElement);
+        });
+    }
 }
 
 /**
@@ -197,9 +294,229 @@ class VetproviehElement extends HTMLElement {
        * @return {string}
        */
     static get template() {
-        return `<link href="../node_modules/bulma/css/bulma.min.css" 
+        return `<link href="/node_modules/bulma/css/bulma.min.css" 
                   rel="stylesheet" type="text/css">`;
     }
+}
+
+/**
+ * NavParams for a MPA-Application
+ */
+class VetproviehNavParams {
+    /**
+       * Returning Something out of the Storage
+       * @param {string} key
+       * @return {any}
+       */
+    static get(key) {
+        const loadedObject = localStorage.getItem(key);
+        if (loadedObject) {
+            return JSON.parse(loadedObject);
+        }
+        return {};
+    }
+    /**
+       * Delete a local Storage Item
+       * @param {string} key
+       */
+    static delete(key) {
+        localStorage.removeItem(key);
+    }
+    /**
+       * Setting Storage
+       * @param {string} key
+       * @param {any} value
+       */
+    static set(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    }
+}
+
+/**
+ * Repeats Template Element. Amount is set by the amount of objects
+ * inside
+ */
+class VetproviehRepeat extends VetproviehElement {
+    /**
+     * Default-Contructor
+     * @param {HTMLTemplateElement} pListTemplate
+     */
+    constructor(pListTemplate = undefined) {
+        super();
+        this._objects = [];
+        this._orderBy = "+position";
+        const listTemplate = pListTemplate || this.querySelector('template');
+        if (listTemplate) {
+            this._listTemplate = listTemplate.content;
+        }
+        else {
+            this._listTemplate = new DocumentFragment();
+        }
+    }
+    /**
+      * Getting View Template
+      * @return {string}
+      */
+    static get template() {
+        return VetproviehElement.template + `<div id="listElements"></div>`;
+    }
+    /**
+       * Getting observed Attributes
+       * @return {string[]}
+       */
+    static get observedAttributes() {
+        return ['objects', 'orderBy'];
+    }
+    /**
+     * Get objects
+     * @return {Array<any>}
+     */
+    get objects() {
+        return this._objects;
+    }
+    /**
+     * Set objects
+     * @param {Array<any>} v
+     */
+    set objects(v) {
+        if (this._objects != v) {
+            this._objects = v;
+            this.clearAndRender();
+        }
+    }
+    /**
+    * Get OrderBy
+    * Expect "+position" for asceding positon
+    * Expect "-position" for descending position
+    * @return {string}
+    */
+    get orderBy() {
+        return this._orderBy;
+    }
+    /**
+     * Set OrderBy
+     * @param {string} v
+     */
+    set orderBy(v) {
+        if (this._orderBy != v) {
+            this._orderBy = v;
+            this.clearAndRender();
+        }
+    }
+    /**
+    * Connected Callback
+    */
+    connectedCallback() {
+        this._initalizeShadowRoot(VetproviehRepeat.template);
+        this.renderList();
+    }
+    /**
+     * Clear and Render
+     */
+    clearAndRender() {
+        this.clear();
+        this._sortObjects();
+        this.renderList();
+    }
+    /**
+     * Sorting Objects
+     */
+    _sortObjects() {
+        try {
+            let asc = this.orderBy.substring(0, 1) == "+" ? 1 : -1;
+            let argument = this.orderBy.substring(1);
+            this.objects = this.objects
+                .sort((a, b) => {
+                let aValue = a[argument];
+                let bValue = b[argument];
+                return (aValue - bValue) * asc;
+            });
+        }
+        catch (e) {
+        }
+    }
+    /**
+     * List will be cleared
+     */
+    clear() {
+        const list = this.list;
+        if (list)
+            list.innerHTML = '';
+    }
+    /**
+     * Rendering List-Content
+     */
+    renderList() {
+        this.objects
+            .forEach((obj, index) => {
+            this._attachToList(obj, index);
+        });
+    }
+    /**
+     * Inserts Element to List
+     * @param {any} dataItem
+     * @param {index} number
+     * @private
+     */
+    _attachToList(dataItem, index = 0) {
+        if (this.shadowRoot) {
+            const newListItem = this._generateListItem(dataItem);
+            dataItem["index"] = index;
+            ViewHelper.replacePlaceholders(newListItem, dataItem);
+            const list = this.list;
+            if (list) {
+                list.appendChild(newListItem.children[0]);
+            }
+        }
+    }
+    /**
+     * Getting List Element
+     * @return {HTMLElement | undefined}
+     */
+    get list() {
+        if (this.shadowRoot) {
+            return this.shadowRoot.getElementById('listElements');
+        }
+        else {
+            return undefined;
+        }
+    }
+    /**
+    * Generate new Item for List which is based on the template
+    * @param {any} dataItem
+    * @param {boolean} activatedEventListener
+    * @return {HTMLDivElement}
+    * @private
+    */
+    _generateListItem(dataItem, activatedEventListener = false) {
+        const newNode = document.importNode(this._listTemplate, true);
+        const div = document.createElement('div');
+        if (activatedEventListener) {
+            div.addEventListener('click', () => {
+                const selectedEvent = new Event('selected');
+                selectedEvent['data'] = dataItem;
+                this.dispatchEvent(selectedEvent);
+            });
+        }
+        div.appendChild(newNode);
+        return div;
+    }
+    /**
+     * Intializing Shadow-Root
+     * @param {string} template
+     * @protected
+     */
+    _initalizeShadowRoot(template) {
+        // Lazy creation of shadowRoot.
+        if (!this.shadowRoot) {
+            super.attachShadow({
+                mode: 'open',
+            }).innerHTML = template;
+        }
+    }
+}
+if (!customElements.get('vp-repeat')) {
+    customElements.define('vp-repeat', VetproviehRepeat);
 }
 
 /**
@@ -333,7 +650,7 @@ class FormtValidation {
        * @return {boolean}
        */
     static isAcceptedInputType(element) {
-        return element.tagName == 'INPUT' &&
+        return element.tagName == 'TEXTAREA' || element.tagName == 'INPUT' &&
             notAcceptedInputTypes.findIndex((t) => t === element.type) == -1;
     }
     /**
@@ -380,6 +697,21 @@ class FormtValidation {
     }
 }
 
+class LoadedEvent extends Event {
+    constructor(data) {
+        super("loadeddata");
+        this.data = data;
+    }
+    get data() {
+        return this._data;
+    }
+    set data(v) {
+        if (this._data != v) {
+            this._data = v;
+        }
+    }
+}
+
 /**
  * `vetprovieh-detail`
  * Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.
@@ -396,6 +728,7 @@ class VetproviehDetail extends VetproviehElement {
         this._src = null;
         this._id = null;
         this._currentObject = {};
+        this._storeElement = false;
         const template = pListTemplate || this.querySelector('template');
         if (template) {
             this._detailTemplate = template.content;
@@ -438,6 +771,21 @@ class VetproviehDetail extends VetproviehElement {
         return ['src', 'id'];
     }
     /**
+       * @property {boolean} storeElement
+       */
+    get storeElement() {
+        return this._storeElement;
+    }
+    /**
+     * Setting Src
+     * @param {boolean} val
+     */
+    set storeElement(val) {
+        if (val !== this.storeElement) {
+            this._storeElement = val;
+        }
+    }
+    /**
        * @property {string|null} src
        */
     get src() {
@@ -452,6 +800,13 @@ class VetproviehDetail extends VetproviehElement {
             this._src = val;
             this._fetchDataFromServer();
         }
+    }
+    /**
+     * Get Current Object
+     * @return {any}
+     */
+    get currentObject() {
+        return this._currentObject;
     }
     /**
      * ID of the currentObject
@@ -482,6 +837,7 @@ class VetproviehDetail extends VetproviehElement {
         }
         this._attachListenerToButtons();
         this._loadHtmlId();
+        window.onunload = () => this._storeCurrentObject();
     }
     /**
        * Attaching Listener to Save and Abort Button
@@ -491,7 +847,11 @@ class VetproviehDetail extends VetproviehElement {
         const save = this.getByIdFromShadowRoot('saveButton');
         const abort = this.getByIdFromShadowRoot('abortButton');
         save.addEventListener('click', () => this.save());
-        abort.addEventListener('click', () => window.history.back());
+        abort.addEventListener('click', () => {
+            // Destroy Cached local Data
+            VetproviehNavParams.delete(window.location.href);
+            window.history.back();
+        });
     }
     /**
      * Show Notification
@@ -517,6 +877,8 @@ class VetproviehDetail extends VetproviehElement {
                     // What do when the request is successful
                     console.log('success!', xhr);
                     _this._showNotification('Daten erfolgreich gespeichert');
+                    // Destroy Cached local Data
+                    VetproviehNavParams.delete(window.location.href);
                 }
                 else {
                     // What do when the request fails
@@ -564,17 +926,23 @@ class VetproviehDetail extends VetproviehElement {
         detail.appendChild(this._generateDetail());
         if (data) {
             this._bindFormElements(data);
+            this._emitLoaded(data);
         }
+    }
+    /**
+     * Emitting loaded Event
+     * @param {any} data
+     */
+    _emitLoaded(data) {
+        var event = new LoadedEvent(data);
+        this.dispatchEvent(event);
     }
     /**
        * Load ID from Parameters
        * @private
        */
     _loadHtmlId() {
-        const urlString = window.location.href;
-        const url = new URL(urlString);
-        const id = url.searchParams.get('id');
-        this.objId = id;
+        this.objId = ViewHelper.getParameter("id");
         if (!this.objId) {
             this.objId = 'new';
         }
@@ -625,19 +993,58 @@ class VetproviehDetail extends VetproviehElement {
     // PRIVATE METHODS
     // -----------------
     /**
-       * Loading Data from Remote-Server
-       * @private
-       */
+     * Overwriteable Callback
+     * @param {any} data
+     * @protected
+     */
+    _afterFetch(data) {
+    }
+    /**
+     * Storing current Object into LocalStorage
+     */
+    _storeCurrentObject() {
+        if (this.storeElement) {
+            VetproviehNavParams.set(this._storeKey, this.currentObject);
+        }
+    }
+    /**
+     * Getting StoreKey
+     * @return {string}
+     */
+    get _storeKey() {
+        let url = window.location.origin + window.location.pathname;
+        if (this.objId != 'new') {
+            url += "?id=" + this.objId;
+        }
+        return url;
+    }
+    /**
+     * Loading Data from Remote-Server
+     * @private
+     */
     _fetchDataFromServer() {
         if (this.objId && this.src) {
             const self = this;
             let endpoint = 'new.json';
-            if (this.objId != 'new')
+            let localObject = null;
+            if (this.objId != 'new') {
                 endpoint = this.src + '/' + this.objId;
-            fetch(endpoint)
-                .then((response) => response.json())
-                .then((data) => self.attachData(data))
-                .catch((error) => console.log(error));
+                localObject = VetproviehNavParams.get(this._storeKey);
+            }
+            else if (this.storeElement) {
+                localObject = VetproviehNavParams.get(this._storeKey);
+            }
+            if (localObject && Object.keys(localObject).length > 0) {
+                self.attachData(localObject);
+                self._afterFetch(localObject);
+            }
+            else {
+                fetch(endpoint)
+                    .then((response) => response.json())
+                    .then((data) => self.attachData(data))
+                    .then((data) => self._afterFetch(data))
+                    .catch((error) => console.log(error));
+            }
         }
     }
 }
