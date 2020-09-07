@@ -1,3 +1,29 @@
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __metadata(metadataKey, metadataValue) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
 /**
  * Helper to get and set Attributes on Objects
  */
@@ -226,8 +252,16 @@ class VetproviehBinding {
                 const element = target
                     .querySelector('[property="' + prefix + key + '"]');
                 if (element) {
-                    this._attachEventListener(element);
-                    binding.addBinding(element, 'value', 'change');
+                    let input = element;
+                    this._attachEventListener(input);
+                    if (input.type == "checkbox") {
+                        console.log("checked binding");
+                        binding.addBinding(input, 'checked', 'change');
+                    }
+                    else {
+                        console.log("checked binding normal");
+                        binding.addBinding(input, 'value', 'change');
+                    }
                 }
             }
         });
@@ -239,8 +273,8 @@ class VetproviehBinding {
      */
     static _attachEventListener(element) {
         element.addEventListener('blur', (event) => {
-            //const validator = new FormtValidation();
-            //validator.validateElement(event.target as HTMLInputElement);
+            // const validator = new FormtValidation();
+            // validator.validateElement(event.target as HTMLInputElement);
         });
     }
 }
@@ -249,6 +283,19 @@ class VetproviehBinding {
  * BaseClass for view Elements
  */
 class VetproviehElement extends HTMLElement {
+    get template() {
+        return '';
+    }
+    constructor(shadowed = true, render = true) {
+        super();
+        if (shadowed) {
+            this.attachShadow({
+                mode: 'open',
+            });
+        }
+        if (render)
+            this.render();
+    }
     /**
        * Callback Implementation
        * @param {string} name
@@ -257,7 +304,21 @@ class VetproviehElement extends HTMLElement {
        */
     attributeChangedCallback(name, old, value) {
         if (old !== value) {
+            this.sendCallback(`_${name}_beforeSet`, value);
             this[name] = value;
+            this.sendCallback(`_${name}_afterSet`, value);
+            this.render();
+        }
+    }
+    /**
+     * Connected Callback
+     */
+    connectedCallback() {
+    }
+    sendCallback(name, value) {
+        const method = this[name];
+        if (method && typeof (method) === 'function') {
+            this[name](value);
         }
     }
     /**
@@ -268,6 +329,15 @@ class VetproviehElement extends HTMLElement {
     getByIdFromShadowRoot(id) {
         if (this.shadowRoot) {
             return this.shadowRoot.getElementById(id);
+        }
+    }
+    render() {
+        const renderedTemplate = eval('`' + this.template + '`');
+        if (this.shadowRoot) {
+            this.shadowRoot.innerHTML = renderedTemplate;
+        }
+        else {
+            this.innerHTML = renderedTemplate;
         }
     }
     /**
@@ -284,6 +354,17 @@ class VetproviehElement extends HTMLElement {
             else {
                 search.classList.remove('is-hidden');
             }
+        }
+    }
+    get innerHTML() {
+        return super.innerHTML;
+    }
+    set innerHTML(input) {
+        if (this.shadowRoot != null) {
+            this.shadowRoot.innerHTML = input;
+        }
+        else {
+            super.innerHTML = input;
         }
     }
     // -----------------
@@ -336,15 +417,15 @@ class VetproviehNavParams {
  * Repeats Template Element. Amount is set by the amount of objects
  * inside
  */
-class VetproviehRepeat extends VetproviehElement {
+class VetproviehBasicRepeat extends VetproviehElement {
     /**
      * Default-Contructor
      * @param {HTMLTemplateElement} pListTemplate
      */
-    constructor(pListTemplate = undefined) {
-        super();
+    constructor(pListTemplate = undefined, shadowed = true) {
+        super(shadowed);
         this._objects = [];
-        this._orderBy = "+position";
+        this._orderBy = '+position';
         const listTemplate = pListTemplate || this.querySelector('template');
         if (listTemplate) {
             this._listTemplate = listTemplate.content;
@@ -354,16 +435,9 @@ class VetproviehRepeat extends VetproviehElement {
         }
     }
     /**
-      * Getting View Template
-      * @return {string}
-      */
-    static get template() {
-        return VetproviehElement.template + `<div id="listElements"></div>`;
-    }
-    /**
-       * Getting observed Attributes
-       * @return {string[]}
-       */
+         * Getting observed Attributes
+         * @return {string[]}
+         */
     static get observedAttributes() {
         return ['objects', 'orderBy'];
     }
@@ -407,7 +481,7 @@ class VetproviehRepeat extends VetproviehElement {
     * Connected Callback
     */
     connectedCallback() {
-        this._initalizeShadowRoot(VetproviehRepeat.template);
+        this._initalizeShadowRoot(VetproviehBasicRepeat.template);
         this.renderList();
     }
     /**
@@ -423,12 +497,12 @@ class VetproviehRepeat extends VetproviehElement {
      */
     _sortObjects() {
         try {
-            let asc = this.orderBy.substring(0, 1) == "+" ? 1 : -1;
-            let argument = this.orderBy.substring(1);
+            const asc = this.orderBy.substring(0, 1) == '+' ? 1 : -1;
+            const argument = this.orderBy.substring(1);
             this.objects = this.objects
                 .sort((a, b) => {
-                let aValue = a[argument];
-                let bValue = b[argument];
+                const aValue = a[argument];
+                const bValue = b[argument];
                 return (aValue - bValue) * asc;
             });
         }
@@ -461,7 +535,7 @@ class VetproviehRepeat extends VetproviehElement {
     _attachToList(dataItem, index = 0) {
         if (this.shadowRoot) {
             const newListItem = this._generateListItem(dataItem);
-            dataItem["index"] = index;
+            dataItem['index'] = index;
             ViewHelper.replacePlaceholders(newListItem, dataItem);
             const list = this.list;
             if (list) {
@@ -515,9 +589,112 @@ class VetproviehRepeat extends VetproviehElement {
         }
     }
 }
-if (!customElements.get('vp-repeat')) {
-    customElements.define('vp-repeat', VetproviehRepeat);
+
+function WebComponent(webComponentArgs) {
+    /**
+       * Defining Tag for HTML-Component
+       * @param {any} constructor
+       * @param {string} tagName
+       */
+    const defineTag = (constructor, tagName, extendElement) => {
+        if (!customElements.get(tagName)) {
+            if (extendElement) {
+                customElements.define(tagName, constructor, { extends: extendElement });
+            }
+            else {
+                customElements.define(tagName, constructor);
+            }
+        }
+    };
+    return function (constructorFunction) {
+        /**
+             * Building Wrapper Function for new Constructor
+             * @param args
+             */
+        const newConstructorFunction = function (...args) {
+            const func = function () {
+                return new constructorFunction(...args);
+            };
+            func.prototype = constructorFunction.prototype;
+            const result = new func();
+            return result;
+        };
+        newConstructorFunction.prototype = constructorFunction.prototype;
+        if (webComponentArgs.template) {
+            Object.defineProperty(newConstructorFunction.prototype, 'template', {
+                get: () => webComponentArgs.template || "",
+            });
+        }
+        defineTag(constructorFunction, webComponentArgs.tag, webComponentArgs.extends);
+        return newConstructorFunction;
+    };
 }
+
+/**
+ * Repeats Template Element. Amount is set by the amount of objects
+ * inside
+ */
+let VetproviehRepeat = class VetproviehRepeat extends VetproviehBasicRepeat {
+};
+VetproviehRepeat = __decorate([
+    WebComponent({
+        template: VetproviehElement.template + `<div id="listElements"></div>`,
+        tag: "vp-repeat"
+    })
+], VetproviehRepeat);
+
+let VetproviehTable = class VetproviehTable extends VetproviehBasicRepeat {
+    /**
+     * Inserts Element to List
+     * @param {any} dataItem
+     * @param {index} number
+     * @private
+     */
+    _attachToList(dataItem, index = 0) {
+        if (this.shadowRoot) {
+            const newListItem = this._generateListItem(dataItem);
+            dataItem['index'] = index;
+            ViewHelper.replacePlaceholders(newListItem, dataItem);
+            this._attachParamsToLink(newListItem, dataItem);
+            const list = this.list;
+            if (list) {
+                list.appendChild(newListItem.children[0]);
+            }
+        }
+    }
+    _attachParamsToLink(newListItem, dataItem) {
+        let a = newListItem.getElementsByTagName("a")[0];
+        if (a) {
+            a.params = dataItem;
+        }
+    }
+    /**
+   * Generate new Item for List which is based on the template
+   * @param {any} dataItem
+   * @param {boolean} activatedEventListener
+   * @return {HTMLDivElement}
+   * @private
+   */
+    _generateListItem(dataItem, activatedEventListener = false) {
+        const newNode = document.importNode(this._listTemplate, true);
+        const div = document.createElement('tbody');
+        div.appendChild(newNode);
+        return div;
+    }
+};
+VetproviehTable = __decorate([
+    WebComponent({
+        template: VetproviehElement.template + `
+        <table class="table">
+          <thead>
+          </thead>
+          <tbody id="listElements">
+          </tbody>
+        </table>
+    `,
+        tag: "vp-table"
+    })
+], VetproviehTable);
 
 /**
  * Decorator for CSS-Framework bulma.io
@@ -718,7 +895,7 @@ class LoadedEvent extends Event {
  *
  * @customElement
  */
-class VetproviehDetail extends VetproviehElement {
+class VetproviehBasicDetail extends VetproviehElement {
     /**
      * Default-Constructor
      * @param {HTMLTemplateElement | undefined} pListTemplate
@@ -733,35 +910,6 @@ class VetproviehDetail extends VetproviehElement {
         if (template) {
             this._detailTemplate = template.content;
         }
-    }
-    /**
-         * Getting Template
-         */
-    static get template() {
-        return super.template + ` 
-        <form id="form">
-            <vetprovieh-notification id="notification">
-            </vetprovieh-notification>
-            <div id="detail" class="container">
-            
-            </div>
-            <hr/>
-            <div class="container">
-            <div class="columns">
-                <div class="column">
-                    <input id="abortButton" 
-                            class="button is-danger is-fullwidth" 
-                            type="reset" value="Abbrechen">                   
-                </div>
-                <div class="column">
-                    <input id="saveButton" 
-                            class="button is-success is-fullwidth" 
-                            type="button" value="Speichern">
-                </div>
-            </div>
-            </div>
-        </form>
-        `;
     }
     /**
          * Observed attributes
@@ -833,7 +981,7 @@ class VetproviehDetail extends VetproviehElement {
         if (!this.shadowRoot) {
             this.attachShadow({
                 mode: 'open',
-            }).innerHTML = VetproviehDetail.template;
+            }).innerHTML = this.template;
         }
         this._attachListenerToButtons();
         this._loadHtmlId();
@@ -956,23 +1104,9 @@ class VetproviehDetail extends VetproviehElement {
         if (prefix == '') {
             this._currentObject = data;
         }
-        Object.keys(data).forEach((key) => {
-            if (data[key] != null && typeof (data[key]) === 'object') {
-                this._bindFormElements(data[key], key + '.');
-            }
-            else {
-                const binding = new VetproviehBinding(data, key);
-                const element = this.shadowRoot
-                    .querySelector('[property="' + prefix + key + '"]');
-                if (element) {
-                    element.addEventListener('blur', (event) => {
-                        const validator = new FormtValidation();
-                        validator.validateElement(event.target);
-                    });
-                    binding.addBinding(element, 'value', 'change');
-                }
-            }
-        });
+        if (this.shadowRoot != null) {
+            VetproviehBinding.bindFormElements(this.shadowRoot, data);
+        }
     }
     /**
        * Generate new Item for List which is based on the template
@@ -1048,40 +1182,59 @@ class VetproviehDetail extends VetproviehElement {
         }
     }
 }
-customElements.define('vetprovieh-detail', VetproviehDetail);
+
+/**
+ * `vetprovieh-detail`
+ * Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.
+ *
+ * @customElement
+ */
+let VetproviehDetail = class VetproviehDetail extends VetproviehBasicDetail {
+};
+VetproviehDetail = __decorate([
+    WebComponent({
+        template: VetproviehElement.template + ` 
+  <form id="form">
+      <vetprovieh-notification id="notification">
+      </vetprovieh-notification>
+      <div id="detail" class="container">
+      
+      </div>
+      <hr/>
+      <div class="container">
+      <div class="columns">
+          <div class="column">
+              <input id="abortButton" 
+                      class="button is-danger is-fullwidth" 
+                      type="reset" value="Abbrechen">                   
+          </div>
+          <div class="column">
+              <input id="saveButton" 
+                      class="button is-success is-fullwidth" 
+                      type="button" value="Speichern">
+          </div>
+      </div>
+      </div>
+  </form>
+  `,
+        tag: 'vetprovieh-detail'
+    })
+], VetproviehDetail);
 
 /**
  * Notification
  */
-class VetproviehNotification extends VetproviehElement {
+let VetproviehNotification = class VetproviehNotification extends VetproviehElement {
     /**
      * Default-Constructor
      */
     constructor() {
         super();
+        this._text = "";
         this._type = 'is-primary';
-        this._text = this.innerHTML;
-    }
-    /**
-       * Getting Template
-       * @return {string}
-       */
-    static get template() {
-        return super.template + `
-              <style>
-                  #notification {
-                      transition: all 1s linear;
-                  }
-                  .hidden{
-                      opacity: 0;
-                  }
-              </style>
-              <div class="is-hidden">
-                  <div id="notification" class="notification hidden">
-                    <div id="text"></div>
-                  </div>
-              </div>
-          `;
+        if (this.innerHTML) {
+            this._text = this.innerHTML;
+        }
     }
     /**
        * @property {string|null} type
@@ -1147,7 +1300,7 @@ class VetproviehNotification extends VetproviehElement {
         if (!this.shadowRoot) {
             this.attachShadow({
                 mode: 'open',
-            }).innerHTML = VetproviehNotification.template;
+            }).innerHTML = this.template;
         }
         this._updateRendering();
     }
@@ -1160,8 +1313,28 @@ class VetproviehNotification extends VetproviehElement {
         notificationBox.classList.add(this.type);
         textBox.innerHTML = this._text;
     }
-}
-customElements.define('vetprovieh-notification', VetproviehNotification);
+};
+VetproviehNotification = __decorate([
+    WebComponent({
+        template: VetproviehElement.template + `
+  <style>
+      #notification {
+          transition: all 1s linear;
+      }
+      .hidden{
+          opacity: 0;
+      }
+  </style>
+  <div class="is-hidden">
+      <div id="notification" class="notification hidden">
+        <div id="text"></div>
+      </div>
+  </div>
+`,
+        tag: 'vetprovieh-notification'
+    }),
+    __metadata("design:paramtypes", [])
+], VetproviehNotification);
 
-export { VetproviehDetail, VetproviehNotification };
+export { VetproviehBasicDetail, VetproviehDetail, VetproviehNotification };
 //# sourceMappingURL=vetprovieh-detail.js.map
