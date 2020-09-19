@@ -10,8 +10,8 @@ cache:
 before_script:
   - \[ -d "../vetprovieh-shared/" ] && rm -R ../vetprovieh-shared/
   - git clone https://tomuench:${CI_JOB_TOKEN}@gitlab.edvsz.hs-osnabrueck.de/vetprovieh/core/web-application/vetprovieh-shared ../vetprovieh-shared
-  - \[ -d "../formt-validaton/" ] && rm -R ../formt-validaton/
-  - git clone https://tomuench:${CI_JOB_TOKEN}@gitlab.edvsz.hs-osnabrueck.de/vetprovieh/core/web-application/formt-validaton ../formt-validaton
+  - \[ -d "../formt-validation/" ] && rm -R ../formt-validation/
+  - git clone https://tomuench:${CI_JOB_TOKEN}@gitlab.edvsz.hs-osnabrueck.de/vetprovieh/core/web-application/formt-validation ../formt-validation
   - npm ci --cache .npm --prefer-offline
   
 build:
