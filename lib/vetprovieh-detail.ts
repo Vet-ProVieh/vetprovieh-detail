@@ -28,9 +28,12 @@ import { VetproviehBasicDetail } from './vetprovieh-basic-detail';
       <div class="columns">
           <div class="column">
               <input id="abortButton" 
-                      class="button is-danger is-fullwidth" 
-                      type="reset" value="Abbrechen">                   
+                      class="button is-light is-fullwidth" 
+                      type="reset" value="Zurück">                   
           </div>
+          
+          \${this.destroyButton}
+          
           <div class="column">
               <input id="saveButton" 
                       class="button is-success is-fullwidth" 

@@ -21,7 +21,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
        * @return {Array<string>}
        */
   static get observedAttributes() {
-    return ['src', 'id'];
+    return ['destroyable', 'src', 'id'];
   }
 
   private _src: string | null = null;
@@ -30,6 +30,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
   private _detailTemplate: DocumentFragment | undefined;
 
   private _storeElement: boolean = false;
+  private _destroyable: boolean = false;
 
   /**
    * Default-Constructor
@@ -76,6 +77,24 @@ export class VetproviehBasicDetail extends VetproviehElement {
     if (val !== this.src) {
       this._src = val;
       this._fetchDataFromServer();
+    }
+  }
+
+  /**
+    * @property {boolean} src
+    */
+  get destroyable(): boolean {
+    return this._destroyable;
+  }
+
+  /**
+   * Setting Src
+   * @param {boolean} val
+   */
+  set destroyable(val) {
+    let valAsBoolean = val;
+    if (valAsBoolean !== this._destroyable) {
+      this._destroyable = valAsBoolean;
     }
   }
 
@@ -129,13 +148,23 @@ export class VetproviehBasicDetail extends VetproviehElement {
   _attachListenerToButtons() {
     const save = this.getByIdFromShadowRoot('saveButton') as HTMLElement;
     const abort = this.getByIdFromShadowRoot('abortButton') as HTMLElement;
-    save.addEventListener('click', () => this.save());
-    abort.addEventListener('click', () => {
+    const destroy = this.getByIdFromShadowRoot('destroyButton') as HTMLElement;
 
-      // Destroy Cached local Data
-      VetproviehNavParams.delete(window.location.href);
-      window.history.back()
-    });
+    save.addEventListener('click', () => this.save());
+
+    if (this.destroyable && destroy) {
+      destroy.addEventListener('click', () => {
+        if (confirm('Möchten Sie wirklich diesen Datensatz löschen')) {
+          this.destroy();
+        }
+      })
+    }
+    abort.addEventListener('click', () => this.goBack());
+  }
+
+  private goBack() {
+    VetproviehNavParams.delete(window.location.href);
+    window.history.back()
   }
 
   /**
@@ -178,6 +207,56 @@ export class VetproviehBasicDetail extends VetproviehElement {
     }
   }
 
+
+  /**
+   * Destroy an Element
+   */
+  destroy() {
+    const _this = this;
+    if (this.destroyable) {
+      fetch(this.endpoint, { method: "DELETE" }).then((response) => {
+        if (response.status === 200) {
+          _this._showNotification('Daten erfolgreich gelöscht');
+          setTimeout(() => {
+            _this.goBack();
+          }, 3000);
+        } else {
+          _this._showNotification('Daten konnten nicht gelöscht werden.',
+            'is-danger');
+        }
+
+      }).catch((error) => {
+        _this._showNotification('Daten konnten nicht gelöscht werden.',
+          'is-danger');
+      })
+    }
+  }
+
+  get destroyButton(): string {
+    if (!this.destroyable) {
+      return '';
+    }
+    return `
+        <div class="column">
+        <input id="destroyButton" 
+                class="button is-danger is-fullwidth" 
+                type="button" value="Löschen">                   
+        </div>
+    `;
+  }
+
+  /**
+   * Current Endpoint
+   * @return {string}
+   */
+  private get endpoint(): string {
+    if (this.objId != 'new') {
+      return this.src + '/' + this.objId;
+    } else {
+      return this.src as string;
+    }
+  }
+
   /**
      * Build-Save Request for Backend
      * @return {XMLHttpRequest}
@@ -187,9 +266,9 @@ export class VetproviehBasicDetail extends VetproviehElement {
     const xhr = new XMLHttpRequest();
 
     if (this.objId != 'new') {
-      xhr.open('PUT', this.src + '/' + this.objId);
+      xhr.open('PUT', this.endpoint);
     } else {
-      xhr.open('POST', this.src as string);
+      xhr.open('POST', this.endpoint);
     }
     xhr.setRequestHeader('Content-Type', 'application/json');
     return xhr;
@@ -252,8 +331,8 @@ export class VetproviehBasicDetail extends VetproviehElement {
       this._currentObject = data;
     }
 
-    if(this.shadowRoot != null){
-      VetproviehBinding.bindFormElements(this.shadowRoot,data)
+    if (this.shadowRoot != null) {
+      VetproviehBinding.bindFormElements(this.shadowRoot, data)
     }
   }
 
