@@ -295,6 +295,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
     detail.innerHTML = '';
     detail.appendChild(this._generateDetail());
     if (data) {
+      ViewHelper.replacePlaceholders(detail, data)
       this._bindFormElements(data);
       this._emitLoaded(data);
     }

@@ -150,6 +150,7 @@ class ViewHelper {
        */
     static replacePlaceholders(template, e) {
         let match = null;
+        console.log(template.innerHTML);
         while (match = template.innerHTML.match(ViewHelper.regexTemplate)) {
             let value = ObjectHelper.get(e, match[1]);
             value = value || '';
@@ -173,6 +174,12 @@ class VetproviehBinding {
         this._bindings = [];
     }
     /**
+     * Clear all Bindings
+     */
+    clear() {
+        this._bindings = [];
+    }
+    /**
      * Gets current property value
      * @return {any}
      */
@@ -189,6 +196,11 @@ class VetproviehBinding {
             this._updateBindings(val);
         }
     }
+    set targetObject(val) {
+        if (this._targetObject !== val) {
+            this._targetObject = val;
+        }
+    }
     /**
      * Add Binding to HTML-Field
      * @param {HTMLElement} element
@@ -197,10 +209,21 @@ class VetproviehBinding {
      * @return {VetproviehBinding}
      */
     addBinding(element, attribute, event) {
-        this._attachListenerToEvent(element, event, attribute);
-        this._addToBindings(element, attribute);
-        element[attribute] = this.value;
+        if (!this._alreadyBound(element, attribute)) {
+            this._attachListenerToEvent(element, event, attribute);
+            this._addToBindings(element, attribute);
+            element[attribute] = this.value;
+        }
         return this;
+    }
+    /**
+     * Is a HTMLElement for a property already bound?
+     * @retrun {boolean}
+     */
+    _alreadyBound(element, attribute) {
+        return this._bindings.findIndex((b) => {
+            return b.element.tagName === element.tagName && b.attribute === attribute;
+        }) >= 0;
     }
     /**
      * Insert into internal datastructure
@@ -242,42 +265,48 @@ class VetproviehBinding {
    * @param {any} data (DataObject)
    * @param {string} prefix
    */
-    static bindFormElements(target, data, prefix = '') {
+    static bindFormElements(target, data, prefix = '', listener = (x) => { }) {
         Object.keys(data).forEach((key) => {
-            if (ObjectHelper.isObject(data[key])) {
-                this.bindFormElements(target, data[key], key + '.');
+            if (ObjectHelper.isObject(data[key]) && !Array.isArray(data[key])) {
+                this.bindFormElements(target, data[key], key + '.', listener);
             }
             else {
-                const binding = new VetproviehBinding(data, key);
                 const element = target
                     .querySelector('[property="' + prefix + key + '"]');
                 if (element) {
-                    let input = element;
-                    this._attachEventListener(input);
-                    if (input.type == "checkbox") {
-                        console.log("checked binding");
-                        binding.addBinding(input, 'checked', 'change');
+                    var binding = VetproviehBinding.currentBindings[prefix + key];
+                    if (!binding) {
+                        binding = new VetproviehBinding(data, key);
+                        VetproviehBinding.currentBindings[prefix + key] = binding;
                     }
                     else {
-                        console.log("checked binding normal");
-                        binding.addBinding(input, 'value', 'change');
+                        binding.targetObject = data;
                     }
+                    this._addBinding(element, binding, listener);
                 }
             }
         });
     }
     /**
-     * Attaching EventListener
-     * @param {HTMLElement | null} element
+     * Attach Binding to Element
+     * @param {any} element
      * @param {VetproviehBinding} binding
      */
-    static _attachEventListener(element) {
-        element.addEventListener('blur', (event) => {
-            // const validator = new FormtValidation();
-            // validator.validateElement(event.target as HTMLInputElement);
-        });
+    static _addBinding(element, binding, listener) {
+        switch (element.type) {
+            case "checkbox":
+                binding.addBinding(element, 'checked', 'change');
+                break;
+            default:
+                binding.addBinding(element, 'value', 'change');
+                break;
+        }
+        if (listener) {
+            listener(element);
+        }
     }
 }
+VetproviehBinding.currentBindings = {};
 
 /**
  * BaseClass for view Elements
@@ -384,6 +413,15 @@ class VetproviehElement extends HTMLElement {
  * NavParams for a MPA-Application
  */
 class VetproviehNavParams {
+    static getUrlParameter(key) {
+        let regex;
+        if (regex = (new RegExp('[?&]' + encodeURIComponent(key) + '=([^&]*)')).exec(window.location.search)) {
+            return decodeURIComponent(regex[1]);
+        }
+        else {
+            return null;
+        }
+    }
     /**
        * Returning Something out of the Storage
        * @param {string} key
@@ -440,6 +478,16 @@ class VetproviehBasicRepeat extends VetproviehElement {
          */
     static get observedAttributes() {
         return ['objects', 'orderBy'];
+    }
+    /**
+     * Set List Template and Render
+     * @param {DocumentFragment} val
+     */
+    set listTemplate(val) {
+        if (this._listTemplate !== val) {
+            this._listTemplate = val;
+            this.clearAndRender();
+        }
     }
     /**
      * Get objects
@@ -535,10 +583,12 @@ class VetproviehBasicRepeat extends VetproviehElement {
     _attachToList(dataItem, index = 0) {
         if (this.shadowRoot) {
             const newListItem = this._generateListItem(dataItem);
-            dataItem['index'] = index;
+            if (typeof (dataItem) === "object") {
+                dataItem['index'] = index;
+            }
             ViewHelper.replacePlaceholders(newListItem, dataItem);
             const list = this.list;
-            if (list) {
+            if (list && newListItem.children[0]) {
                 list.appendChild(newListItem.children[0]);
             }
         }
@@ -827,7 +877,7 @@ class FormtValidation {
        * @return {boolean}
        */
     static isAcceptedInputType(element) {
-        return element.tagName == 'TEXTAREA' || element.tagName == 'INPUT' &&
+        return element.tagName == 'TEXTAREA' || element.tagName == 'INPUT' || element.tagName.includes("SELECT") &&
             notAcceptedInputTypes.findIndex((t) => t === element.type) == -1;
     }
     /**
@@ -906,6 +956,7 @@ class VetproviehBasicDetail extends VetproviehElement {
         this._id = null;
         this._currentObject = {};
         this._storeElement = false;
+        this._destroyable = false;
         const template = pListTemplate || this.querySelector('template');
         if (template) {
             this._detailTemplate = template.content;
@@ -916,7 +967,7 @@ class VetproviehBasicDetail extends VetproviehElement {
          * @return {Array<string>}
          */
     static get observedAttributes() {
-        return ['src', 'id'];
+        return ['destroyable', 'src', 'id'];
     }
     /**
        * @property {boolean} storeElement
@@ -947,6 +998,22 @@ class VetproviehBasicDetail extends VetproviehElement {
         if (val !== this.src) {
             this._src = val;
             this._fetchDataFromServer();
+        }
+    }
+    /**
+      * @property {boolean} src
+      */
+    get destroyable() {
+        return this._destroyable;
+    }
+    /**
+     * Setting Src
+     * @param {boolean} val
+     */
+    set destroyable(val) {
+        let valAsBoolean = val;
+        if (valAsBoolean !== this._destroyable) {
+            this._destroyable = valAsBoolean;
         }
     }
     /**
@@ -994,12 +1061,20 @@ class VetproviehBasicDetail extends VetproviehElement {
     _attachListenerToButtons() {
         const save = this.getByIdFromShadowRoot('saveButton');
         const abort = this.getByIdFromShadowRoot('abortButton');
+        const destroy = this.getByIdFromShadowRoot('destroyButton');
         save.addEventListener('click', () => this.save());
-        abort.addEventListener('click', () => {
-            // Destroy Cached local Data
-            VetproviehNavParams.delete(window.location.href);
-            window.history.back();
-        });
+        if (this.destroyable && destroy) {
+            destroy.addEventListener('click', () => {
+                if (confirm('Möchten Sie wirklich diesen Datensatz löschen')) {
+                    this.destroy();
+                }
+            });
+        }
+        abort.addEventListener('click', () => this.goBack());
+    }
+    goBack() {
+        VetproviehNavParams.delete(window.location.href);
+        window.history.back();
     }
     /**
      * Show Notification
@@ -1038,6 +1113,51 @@ class VetproviehBasicDetail extends VetproviehElement {
         }
     }
     /**
+     * Destroy an Element
+     */
+    destroy() {
+        const _this = this;
+        if (this.destroyable) {
+            fetch(this.endpoint, { method: "DELETE" }).then((response) => {
+                if (response.status === 200) {
+                    _this._showNotification('Daten erfolgreich gelöscht');
+                    setTimeout(() => {
+                        _this.goBack();
+                    }, 3000);
+                }
+                else {
+                    _this._showNotification('Daten konnten nicht gelöscht werden.', 'is-danger');
+                }
+            }).catch((error) => {
+                _this._showNotification('Daten konnten nicht gelöscht werden.', 'is-danger');
+            });
+        }
+    }
+    get destroyButton() {
+        if (!this.destroyable) {
+            return '';
+        }
+        return `
+        <div class="column">
+        <input id="destroyButton" 
+                class="button is-danger is-fullwidth" 
+                type="button" value="Löschen">                   
+        </div>
+    `;
+    }
+    /**
+     * Current Endpoint
+     * @return {string}
+     */
+    get endpoint() {
+        if (this.objId != 'new') {
+            return this.src + '/' + this.objId;
+        }
+        else {
+            return this.src;
+        }
+    }
+    /**
        * Build-Save Request for Backend
        * @return {XMLHttpRequest}
        * @private
@@ -1045,10 +1165,10 @@ class VetproviehBasicDetail extends VetproviehElement {
     _buildSaveRequest() {
         const xhr = new XMLHttpRequest();
         if (this.objId != 'new') {
-            xhr.open('PUT', this.src + '/' + this.objId);
+            xhr.open('PUT', this.endpoint);
         }
         else {
-            xhr.open('POST', this.src);
+            xhr.open('POST', this.endpoint);
         }
         xhr.setRequestHeader('Content-Type', 'application/json');
         return xhr;
@@ -1073,6 +1193,7 @@ class VetproviehBasicDetail extends VetproviehElement {
         detail.innerHTML = '';
         detail.appendChild(this._generateDetail());
         if (data) {
+            ViewHelper.replacePlaceholders(detail, data);
             this._bindFormElements(data);
             this._emitLoaded(data);
         }
@@ -1205,9 +1326,12 @@ VetproviehDetail = __decorate([
       <div class="columns">
           <div class="column">
               <input id="abortButton" 
-                      class="button is-danger is-fullwidth" 
-                      type="reset" value="Abbrechen">                   
+                      class="button is-light is-fullwidth" 
+                      type="reset" value="Zurück">                   
           </div>
+          
+          \${this.destroyButton}
+          
           <div class="column">
               <input id="saveButton" 
                       class="button is-success is-fullwidth" 
