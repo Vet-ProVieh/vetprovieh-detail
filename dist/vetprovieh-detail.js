@@ -150,7 +150,6 @@ class ViewHelper {
        */
     static replacePlaceholders(template, e) {
         let match = null;
-        console.log(template.innerHTML);
         while (match = template.innerHTML.match(ViewHelper.regexTemplate)) {
             let value = ObjectHelper.get(e, match[1]);
             value = value || '';
@@ -266,26 +265,57 @@ class VetproviehBinding {
    * @param {string} prefix
    */
     static bindFormElements(target, data, prefix = '', listener = (x) => { }) {
+        console.log("Binding Form Elements");
         Object.keys(data).forEach((key) => {
             if (ObjectHelper.isObject(data[key]) && !Array.isArray(data[key])) {
                 this.bindFormElements(target, data[key], key + '.', listener);
+            }
+            else if (Array.isArray(data[key])) {
+                console.log("Binding Array");
+                this.bindArray(data[key], key, target, listener);
             }
             else {
                 const element = target
                     .querySelector('[property="' + prefix + key + '"]');
                 if (element) {
-                    var binding = VetproviehBinding.currentBindings[prefix + key];
-                    if (!binding) {
-                        binding = new VetproviehBinding(data, key);
-                        VetproviehBinding.currentBindings[prefix + key] = binding;
-                    }
-                    else {
-                        binding.targetObject = data;
-                    }
+                    // TODO: Es können doppelte Einträge entstehen. Hier msus nochmal nachgearbeitet werden
+                    let binding = VetproviehBinding.bindElement(prefix, key, target["uniqueId"] || target.id, data);
                     this._addBinding(element, binding, listener);
                 }
             }
         });
+    }
+    /**
+     * Binding an Element
+     * @param {String} key
+     * @param {String} targetId
+     * @param {any} data
+     * @return {VetproviehBinding}
+     */
+    static bindElement(prefix, key, targetId, data) {
+        let bindingKey = targetId + "-" + prefix + key;
+        console.log(`Binding Element ${bindingKey}`);
+        var binding = VetproviehBinding.currentBindings[bindingKey];
+        if (!binding) {
+            binding = new VetproviehBinding(data, prefix.includes("[") ? key : prefix + key);
+            VetproviehBinding.currentBindings[bindingKey] = binding;
+        }
+        else {
+            binding.targetObject = data;
+        }
+        return binding;
+    }
+    /**
+     * Bind Array
+     * @param {any[]} array
+     * @param {string} key
+     * @param {any} target
+     * @param {(x: HTMLElement) => void} listener
+     */
+    static bindArray(array, key, target, listener) {
+        for (let i = 0; i < array.length; i++) {
+            this.bindFormElements(target, array[i], `${key}[${i}].`, listener);
+        }
     }
     /**
      * Attach Binding to Element
@@ -669,6 +699,13 @@ function WebComponent(webComponentArgs) {
             const result = new func();
             return result;
         };
+        let filter = ['length', 'prototype', 'name'];
+        Object.getOwnPropertyNames(constructorFunction)
+            .filter((key) => !filter.includes(key))
+            .forEach((key) => {
+            newConstructorFunction[key] = constructorFunction[key];
+        });
+        newConstructorFunction["observedAttributes"] = constructorFunction["observedAttributes"];
         newConstructorFunction.prototype = constructorFunction.prototype;
         if (webComponentArgs.template) {
             Object.defineProperty(newConstructorFunction.prototype, 'template', {
@@ -957,6 +994,7 @@ class VetproviehBasicDetail extends VetproviehElement {
         this._currentObject = {};
         this._storeElement = false;
         this._destroyable = false;
+        this._beforeSavePromises = [];
         const template = pListTemplate || this.querySelector('template');
         if (template) {
             this._detailTemplate = template.content;
@@ -968,6 +1006,14 @@ class VetproviehBasicDetail extends VetproviehElement {
          */
     static get observedAttributes() {
         return ['destroyable', 'src', 'id'];
+    }
+    addBeforeSavePromise(promise) {
+        if (promise) {
+            this._beforeSavePromises.push(promise);
+        }
+    }
+    beforeSave() {
+        return Promise.all(this._beforeSavePromises.map((p) => p()));
     }
     /**
        * @property {boolean} storeElement
@@ -1022,6 +1068,11 @@ class VetproviehBasicDetail extends VetproviehElement {
      */
     get currentObject() {
         return this._currentObject;
+    }
+    set currentObject(val) {
+        if (this._currentObject !== val) {
+            this._currentObject = val;
+        }
     }
     /**
      * ID of the currentObject
@@ -1092,24 +1143,26 @@ class VetproviehBasicDetail extends VetproviehElement {
        */
     save() {
         if (this._validateForm()) {
-            const xhr = this._buildSaveRequest();
-            const _this = this;
-            xhr.onload = function () {
-                // Process our return data
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    // What do when the request is successful
-                    console.log('success!', xhr);
-                    _this._showNotification('Daten erfolgreich gespeichert');
-                    // Destroy Cached local Data
-                    VetproviehNavParams.delete(window.location.href);
-                }
-                else {
-                    // What do when the request fails
-                    console.log('The request failed!');
-                    _this._showNotification('Daten konnten nicht gespeichert werden.', 'is-danger');
-                }
-            }.bind(this);
-            xhr.send(JSON.stringify(this._currentObject));
+            this.beforeSave().then(() => {
+                const xhr = this._buildSaveRequest();
+                const _this = this;
+                xhr.onload = function () {
+                    // Process our return data
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        // What do when the request is successful
+                        console.log('success!', xhr);
+                        _this._showNotification('Daten erfolgreich gespeichert');
+                        // Destroy Cached local Data
+                        VetproviehNavParams.delete(window.location.href);
+                    }
+                    else {
+                        // What do when the request fails
+                        console.log('The request failed!');
+                        _this._showNotification('Daten konnten nicht gespeichert werden.', 'is-danger');
+                    }
+                }.bind(this);
+                xhr.send(JSON.stringify(this._currentObject));
+            });
         }
     }
     /**
@@ -1228,6 +1281,9 @@ class VetproviehBasicDetail extends VetproviehElement {
         if (this.shadowRoot != null) {
             VetproviehBinding.bindFormElements(this.shadowRoot, data);
         }
+    }
+    rebindForm() {
+        this._bindFormElements(this._currentObject);
     }
     /**
        * Generate new Item for List which is based on the template

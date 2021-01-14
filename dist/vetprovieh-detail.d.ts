@@ -19,7 +19,11 @@ export class VetproviehBasicDetail extends VetproviehElement {
     _id: string;
     _currentObject: {};
     _storeElement: boolean;
+    _destroyable: any;
+    _beforeSavePromises: any[];
     _detailTemplate: DocumentFragment;
+    addBeforeSavePromise(promise: any): void;
+    beforeSave(): Promise<any[]>;
     /**
      * Setting Src
      * @param {boolean} val
@@ -38,6 +42,16 @@ export class VetproviehBasicDetail extends VetproviehElement {
        * @property {string|null} src
        */
     get src(): string;
+    /**
+     * Setting Src
+     * @param {boolean} val
+     */
+    set destroyable(arg: boolean);
+    /**
+      * @property {boolean} src
+      */
+    get destroyable(): boolean;
+    set currentObject(arg: any);
     /**
      * Get Current Object
      * @return {any}
@@ -58,6 +72,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
        * @private
        */
     private _attachListenerToButtons;
+    goBack(): void;
     /**
      * Show Notification
      * @param {string} text
@@ -68,6 +83,16 @@ export class VetproviehBasicDetail extends VetproviehElement {
        * Save-Process
        */
     save(): void;
+    /**
+     * Destroy an Element
+     */
+    destroy(): void;
+    get destroyButton(): "" | "\n        <div class=\"column\">\n        <input id=\"destroyButton\" \n                class=\"button is-danger is-fullwidth\" \n                type=\"button\" value=\"Löschen\">                   \n        </div>\n    ";
+    /**
+     * Current Endpoint
+     * @return {string}
+     */
+    get endpoint(): string;
     /**
        * Build-Save Request for Backend
        * @return {XMLHttpRequest}
@@ -102,6 +127,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
      * @param {string} prefix
      */
     _bindFormElements(data: any, prefix?: string): void;
+    rebindForm(): void;
     /**
        * Generate new Item for List which is based on the template
        * @return {HTMLDivElement}
@@ -141,7 +167,11 @@ export let VetproviehDetail: {
         _id: string;
         _currentObject: {};
         _storeElement: boolean;
+        _destroyable: any;
+        _beforeSavePromises: any[];
         _detailTemplate: DocumentFragment;
+        addBeforeSavePromise(promise: any): void;
+        beforeSave(): Promise<any[]>;
         /**
            * @property {boolean} storeElement
            */
@@ -151,10 +181,14 @@ export let VetproviehDetail: {
            */
         src: string;
         /**
+          * @property {boolean} src
+          */
+        destroyable: boolean;
+        /**
          * Get Current Object
          * @return {any}
          */
-        readonly currentObject: any;
+        currentObject: any;
         /**
          * ID of the currentObject
            * @property {string|undefined} id
@@ -169,6 +203,7 @@ export let VetproviehDetail: {
            * @private
            */
         _attachListenerToButtons(): void;
+        goBack(): void;
         /**
          * Show Notification
          * @param {string} text
@@ -179,6 +214,16 @@ export let VetproviehDetail: {
            * Save-Process
            */
         save(): void;
+        /**
+         * Destroy an Element
+         */
+        destroy(): void;
+        readonly destroyButton: "" | "\n        <div class=\"column\">\n        <input id=\"destroyButton\" \n                class=\"button is-danger is-fullwidth\" \n                type=\"button\" value=\"Löschen\">                   \n        </div>\n    ";
+        /**
+         * Current Endpoint
+         * @return {string}
+         */
+        readonly endpoint: string;
         /**
            * Build-Save Request for Backend
            * @return {XMLHttpRequest}
@@ -213,6 +258,7 @@ export let VetproviehDetail: {
          * @param {string} prefix
          */
         _bindFormElements(data: any, prefix?: string): void;
+        rebindForm(): void;
         /**
            * Generate new Item for List which is based on the template
            * @return {HTMLDivElement}

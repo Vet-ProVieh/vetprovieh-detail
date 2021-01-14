@@ -117,6 +117,13 @@ export class VetproviehBasicDetail extends VetproviehElement {
   get currentObject(): any {
     return this._currentObject;
   }
+  
+  
+  set currentObject(val: any) {
+    if (this._currentObject !== val) {
+      this._currentObject = val;
+    }
+  }
 
   /**
    * ID of the currentObject
@@ -350,6 +357,10 @@ export class VetproviehBasicDetail extends VetproviehElement {
     if (this.shadowRoot != null) {
       VetproviehBinding.bindFormElements(this.shadowRoot, data)
     }
+  }
+
+  public rebindForm() {
+    this._bindFormElements(this._currentObject);
   }
 
   /**
