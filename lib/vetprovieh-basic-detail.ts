@@ -31,6 +31,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
 
   private _storeElement: boolean = false;
   private _destroyable: boolean = false;
+  private _beforeSavePromises: Function[] = [];
 
   /**
    * Default-Constructor
@@ -44,6 +45,17 @@ export class VetproviehBasicDetail extends VetproviehElement {
       this._detailTemplate = template.content;
     }
   }
+
+  addBeforeSavePromise(promise: Function) {
+    if (promise) {
+      this._beforeSavePromises.push(promise);
+    }
+  }
+
+  protected beforeSave(): Promise<any> {
+    return Promise.all(this._beforeSavePromises.map((p) => p()));
+  }
+
 
   /**
      * @property {boolean} storeElement
@@ -185,25 +197,28 @@ export class VetproviehBasicDetail extends VetproviehElement {
      */
   save() {
     if (this._validateForm()) {
-      const xhr = this._buildSaveRequest();
-      const _this = this;
-      xhr.onload = function () {
-        // Process our return data
-        if (xhr.status >= 200 && xhr.status < 300) {
-          // What do when the request is successful
-          console.log('success!', xhr);
-          _this._showNotification('Daten erfolgreich gespeichert');
+      this.beforeSave().then(() => {
+        const xhr = this._buildSaveRequest();
+        const _this = this;
+        xhr.onload = function () {
+          // Process our return data
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // What do when the request is successful
+            console.log('success!', xhr);
+            _this._showNotification('Daten erfolgreich gespeichert');
 
-          // Destroy Cached local Data
-          VetproviehNavParams.delete(window.location.href);
-        } else {
-          // What do when the request fails
-          console.log('The request failed!');
-          _this._showNotification('Daten konnten nicht gespeichert werden.',
-            'is-danger');
-        }
-      }.bind(this as VetproviehBasicDetail);
-      xhr.send(JSON.stringify(this._currentObject));
+            // Destroy Cached local Data
+            VetproviehNavParams.delete(window.location.href);
+          } else {
+            // What do when the request fails
+            console.log('The request failed!');
+            _this._showNotification('Daten konnten nicht gespeichert werden.',
+              'is-danger');
+          }
+        }.bind(this as VetproviehBasicDetail);
+        xhr.send(JSON.stringify(this._currentObject));
+
+      });
     }
   }
 
