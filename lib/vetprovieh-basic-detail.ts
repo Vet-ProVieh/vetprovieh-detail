@@ -31,6 +31,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
 
   private _storeElement: boolean = false;
   private _destroyable: boolean = false;
+  private _readOnly: boolean = false;
   private _beforeSavePromises: Function[] = [];
 
   /**
@@ -56,6 +57,26 @@ export class VetproviehBasicDetail extends VetproviehElement {
     return Promise.all(this._beforeSavePromises.map((p) => p()));
   }
 
+  /**
+     * @property {boolean} readOnly
+     */
+  get readOnly() {
+    return this._readOnly;
+  }
+
+  set readOnly(val: boolean) {
+    if (val !== this.readOnly) {
+      this._readOnly = val;
+      console.log("Setting readonly");
+      this.getByIdFromShadowRoot("detail")?.querySelectorAll("input, select").forEach((element) => {
+        element.disabled = val;
+      })
+      let saveButton = this.getByIdFromShadowRoot("saveButton") as HTMLButtonElement;
+      if (saveButton) {
+        saveButton.disabled = val;
+      }
+    }
+  }
 
   /**
      * @property {boolean} storeElement
@@ -117,8 +138,8 @@ export class VetproviehBasicDetail extends VetproviehElement {
   get currentObject(): any {
     return this._currentObject;
   }
-  
-  
+
+
   set currentObject(val: any) {
     if (this._currentObject !== val) {
       this._currentObject = val;
