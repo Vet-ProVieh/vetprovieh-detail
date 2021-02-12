@@ -57,6 +57,8 @@ export class VetproviehBasicDetail extends VetproviehElement {
     return Promise.all(this._beforeSavePromises.map((p) => p()));
   }
 
+  
+
   /**
      * @property {boolean} readOnly
      */
@@ -371,6 +373,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} prefix
    */
   _bindFormElements(data: any, prefix = '') {
+    console.debug("Vetprovieh-Detail: Binding Form-Elements");
     if (prefix == '') {
       this._currentObject = data;
     }
@@ -427,7 +430,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * Getting StoreKey
    * @return {string}
    */
-  private get _storeKey(): string {
+  protected get _storeKey(): string {
     let url = window.location.origin + window.location.pathname;
     if (this.objId != 'new') {
       url += "?id=" + this.objId;
