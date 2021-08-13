@@ -8,6 +8,7 @@ import {
 import { FormtValidation } from '@tomuench/formt-validation';
 import { VetproviehNotification } from './vetprovieh-notification';
 import { LoadedEvent } from './loaded-event';
+import * as bulmaToast from 'bulma-toast';
 /**
  * `vetprovieh-detail`
  * Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.
@@ -57,7 +58,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
     return Promise.all(this._beforeSavePromises.map((p) => p()));
   }
 
-  
+
 
   /**
      * @property {boolean} readOnly
@@ -71,7 +72,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
       this._readOnly = val;
       console.log("Setting readonly");
       this.getByIdFromShadowRoot("detail")?.querySelectorAll("input, select").forEach((element) => {
-        element.disabled = val;
+        (element as any).disabled = val;
       })
       let saveButton = this.getByIdFromShadowRoot("saveButton") as HTMLButtonElement;
       if (saveButton) {
@@ -188,6 +189,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
      * @private
      */
   _attachListenerToButtons() {
+    console.log("Vetprovieh-Basic-Detail: Listener to Button");
     const save = this.getByIdFromShadowRoot('saveButton') as HTMLElement;
     const abort = this.getByIdFromShadowRoot('abortButton') as HTMLElement;
     const destroy = this.getByIdFromShadowRoot('destroyButton') as HTMLElement;
@@ -215,11 +217,13 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} type
    */
   _showNotification(text: string, type = 'is-success') {
-    const notification =
-      this.getByIdFromShadowRoot('notification') as VetproviehNotification;
-    notification.text = text;
-    notification.type = type;
-    notification.display();
+    bulmaToast.toast({
+      message: text,
+      type: type as any,
+      dismissible: false,
+      position: "bottom-center",
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+  })
   }
 
   /**
@@ -236,6 +240,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
             // What do when the request is successful
             console.log('success!', xhr);
             _this._showNotification('Daten erfolgreich gespeichert');
+            _this.tryToSetId(xhr.getResponseHeader("location"));
 
             // Destroy Cached local Data
             VetproviehNavParams.delete(window.location.href);
@@ -249,6 +254,24 @@ export class VetproviehBasicDetail extends VetproviehElement {
         xhr.send(JSON.stringify(this._currentObject));
 
       });
+    }
+  }
+
+  /**
+   * Trying to set id from locationHeader
+   * @param {string| null} locationHeader 
+   */
+  private tryToSetId(locationHeader: string | null) {
+    if (locationHeader) {
+      try {
+        console.log(locationHeader);
+        let locationId = parseInt(locationHeader?.substr(locationHeader.lastIndexOf("/") + 1));
+        this.currentObject.id = locationId;
+        this._id = locationId.toString();
+      } catch(ex) {
+        console.error("Could not Set LocationId");
+        console.error(ex);
+      }
     }
   }
 
@@ -452,6 +475,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
         endpoint = this.src + '/' + this.objId;
         localObject = VetproviehNavParams.get(this._storeKey);
       } else if (this.storeElement) {
+        console.log(this._storeKey);
         localObject = VetproviehNavParams.get(this._storeKey);
       }
 

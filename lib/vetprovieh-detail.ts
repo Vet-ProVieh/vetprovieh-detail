@@ -1,13 +1,7 @@
 import {
-  VetproviehBinding,
   VetproviehElement,
-  VetproviehNavParams,
-  ViewHelper,
   WebComponent,
 } from '@tomuench/vetprovieh-shared/lib/index';
-import { FormtValidation } from '@tomuench/formt-validation';
-import { VetproviehNotification } from './vetprovieh-notification';
-import { LoadedEvent } from './loaded-event';
 import { VetproviehBasicDetail } from './vetprovieh-basic-detail';
 /**
  * `vetprovieh-detail`
@@ -25,7 +19,7 @@ import { VetproviehBasicDetail } from './vetprovieh-basic-detail';
       </div>
       <hr/>
       <div class="container">
-      <div class="columns">
+      <div class="columns is-mobile">
           <div class="column">
               <input id="abortButton" 
                       class="button is-light is-fullwidth" 

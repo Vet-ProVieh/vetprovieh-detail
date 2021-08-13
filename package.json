@@ -16,7 +16,8 @@
     "@fortawesome/fontawesome-free": "^5.13.0",
     "@tomuench/formt-validation": "file:../formt-validation",
     "@tomuench/vetprovieh-shared": "file:../vetprovieh-shared",
-    "bulma": "^0.8.2"
+    "bulma": "^0.8.2",
+    "bulma-toast": "^2.2.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^13.0.0",
