@@ -3,10 +3,8 @@ import {
   VetproviehElement,
   VetproviehNavParams,
   ViewHelper,
-  WebComponent,
 } from '@tomuench/vetprovieh-shared/lib/index';
 import { FormtValidation } from '@tomuench/formt-validation';
-import { VetproviehNotification } from './vetprovieh-notification';
 import { LoadedEvent } from './loaded-event';
 import * as bulmaToast from 'bulma-toast';
 /**
@@ -217,7 +215,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} type
    */
   _showNotification(text: string, type = 'is-success') {
-    bulmaToast.toast({
+    (bulmaToast as any).default.toast({
       message: text,
       type: type as any,
       dismissible: false,
