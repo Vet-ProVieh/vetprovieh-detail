@@ -20,7 +20,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
        * @return {Array<string>}
        */
   static get observedAttributes() {
-    return ['destroyable', 'src', 'id'];
+    return ['destroyable', 'src', 'objId'];
   }
 
   private _src: string | null = null;
@@ -473,7 +473,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
         endpoint = this.src + '/' + this.objId;
         localObject = VetproviehNavParams.get(this._storeKey);
       } else if (this.storeElement) {
-        console.log(this._storeKey);
         localObject = VetproviehNavParams.get(this._storeKey);
       }
 
