@@ -214,7 +214,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} text
    * @param {string} type
    */
-  _showNotification(text: string, type = 'is-success') {
+  private _showNotification(text: string, type = 'is-success') {
     (bulmaToast as any).default.toast({
       message: text,
       type: type as any,
@@ -229,30 +229,39 @@ export class VetproviehBasicDetail extends VetproviehElement {
      */
   save() {
     if (this._validateForm()) {
-      this.beforeSave().then(() => {
-        const xhr = this._buildSaveRequest();
-        const _this = this;
-        xhr.onload = function () {
-          // Process our return data
-          if (xhr.status >= 200 && xhr.status < 300) {
-            // What do when the request is successful
-            console.log('success!', xhr);
-            _this._showNotification('Daten erfolgreich gespeichert');
-            _this.tryToSetId(xhr.getResponseHeader("location"));
-
-            // Destroy Cached local Data
-            VetproviehNavParams.delete(window.location.href);
-          } else {
-            // What do when the request fails
-            console.log('The request failed!');
-            _this._showNotification('Daten konnten nicht gespeichert werden.',
-              'is-danger');
-          }
-        }.bind(this as VetproviehBasicDetail);
-        xhr.send(JSON.stringify(this._currentObject));
-
-      });
+      this.saveWithoutValidate();
+    } else {
+      this._showNotification("Bitte überprüfen Sie ihre Eingaben. Nicht alle Felder sind gefüllt", "is-warning");
     }
+  }
+
+  /**
+   * Save without Validate
+   */
+  protected saveWithoutValidate() {
+    this.beforeSave().then(() => {
+      const xhr = this._buildSaveRequest();
+      const _this = this;
+      xhr.onload = function () {
+        // Process our return data
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // What do when the request is successful
+          console.log('success!', xhr);
+          _this._showNotification('Daten erfolgreich gespeichert');
+          _this.tryToSetId(xhr.getResponseHeader("location"));
+
+          // Destroy Cached local Data
+          VetproviehNavParams.delete(window.location.href);
+        } else {
+          // What do when the request fails
+          console.log('The request failed!');
+          _this._showNotification('Daten konnten nicht gespeichert werden.',
+            'is-danger');
+        }
+      }.bind(this as VetproviehBasicDetail);
+      xhr.send(JSON.stringify(this._currentObject));
+
+    });
   }
 
   /**
