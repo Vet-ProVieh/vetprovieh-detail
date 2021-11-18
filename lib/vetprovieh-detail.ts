@@ -18,7 +18,7 @@ import { VetproviehBasicDetail } from './vetprovieh-basic-detail';
       
       </div>
       <hr/>
-      <div class="container">
+      <div class="container sticky-footer">
       <div class="columns is-mobile">
           <div class="column">
               <input id="abortButton" 

@@ -221,47 +221,60 @@ export class VetproviehBasicDetail extends VetproviehElement {
       dismissible: false,
       position: "bottom-center",
       animate: { in: 'fadeIn', out: 'fadeOut' },
-  })
+    })
   }
 
   /**
      * Save-Process
      */
-  save() {
-    if (this._validateForm()) {
-      this.saveWithoutValidate();
-    } else {
-      this._showNotification("Bitte überprüfen Sie ihre Eingaben. Nicht alle Felder sind gefüllt", "is-warning");
-    }
+  save() : Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (this._validateForm()) {
+        this.saveWithoutValidate().then((x) => resolve(x));
+      } else {
+        resolve(false);
+        this._showNotification("Bitte überprüfen Sie ihre Eingaben. Nicht alle Felder sind gefüllt", "is-warning");
+      }
+    })
   }
 
   /**
    * Save without Validate
    */
-  protected saveWithoutValidate() {
-    this.beforeSave().then(() => {
-      const xhr = this._buildSaveRequest();
-      const _this = this;
-      xhr.onload = function () {
-        // Process our return data
-        if (xhr.status >= 200 && xhr.status < 300) {
-          // What do when the request is successful
-          console.log('success!', xhr);
-          _this._showNotification('Daten erfolgreich gespeichert');
-          _this.tryToSetId(xhr.getResponseHeader("location"));
+  protected saveWithoutValidate(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      this.beforeSave().then(() => {
+        const xhr = this._buildSaveRequest();
+        const _this = this;
+        xhr.onload = function () {
+          // Process our return data
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // What do when the request is successful
+            console.log('success!', xhr);
+            _this._showNotification('Daten erfolgreich gespeichert');
+            _this.tryToSetId(xhr.getResponseHeader("location"));
 
-          // Destroy Cached local Data
-          VetproviehNavParams.delete(window.location.href);
-        } else {
-          // What do when the request fails
-          console.log('The request failed!');
-          _this._showNotification('Daten konnten nicht gespeichert werden.',
-            'is-danger');
-        }
-      }.bind(this as VetproviehBasicDetail);
-      xhr.send(JSON.stringify(this._currentObject));
+            // Destroy Cached local Data
+            VetproviehNavParams.delete(window.location.href);
+            _this.afterSave();
+            resolve(true);
+          } else {
+            // What do when the request fails
+            console.log('The request failed!');
+            _this._showNotification('Daten konnten nicht gespeichert werden.',
+              'is-danger');
+            resolve(false);
+          }
+        }.bind(this as VetproviehBasicDetail);
 
-    });
+        xhr.send(JSON.stringify(this._currentObject));
+
+      });
+    })
+  }
+
+  protected afterSave() {
+
   }
 
   /**
@@ -275,7 +288,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
         let locationId = parseInt(locationHeader?.substr(locationHeader.lastIndexOf("/") + 1));
         this.currentObject.id = locationId;
         this._id = locationId.toString();
-      } catch(ex) {
+      } catch (ex) {
         console.error("Could not Set LocationId");
         console.error(ex);
       }
@@ -491,8 +504,8 @@ export class VetproviehBasicDetail extends VetproviehElement {
       } else {
         fetch(endpoint)
           .then((response) => response.json())
-          .then((data) => self.attachData(data))
-          .then((data) => self._afterFetch(data))
+          .then((data) => { self.attachData(data); return data })
+          .then((data) => { console.log(data); return self._afterFetch(data) })
           .catch((error) => console.log(error));
       }
     }
