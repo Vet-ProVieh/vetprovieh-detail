@@ -3,9 +3,9 @@ import {
   VetproviehElement,
   VetproviehNavParams,
   ViewHelper,
-} from '@tomuench/vetprovieh-shared/lib/index';
-import { FormtValidation } from '@tomuench/formt-validation';
-import { LoadedEvent } from './loaded-event';
+} from '@vetprovieh/vetprovieh-shared/lib/index';
+import {FormtValidation} from '@vetprovieh/formt-validation';
+import {LoadedEvent} from './loaded-event';
 import * as bulmaToast from 'bulma-toast';
 /**
  * `vetprovieh-detail`
@@ -14,7 +14,6 @@ import * as bulmaToast from 'bulma-toast';
  * @customElement
  */
 export class VetproviehBasicDetail extends VetproviehElement {
-
   /**
        * Observed attributes
        * @return {Array<string>}
@@ -28,10 +27,10 @@ export class VetproviehBasicDetail extends VetproviehElement {
   protected _currentObject: any = {};
   private _detailTemplate: DocumentFragment | undefined;
 
-  private _storeElement: boolean = false;
-  private _destroyable: boolean = false;
-  private _readOnly: boolean = false;
-  private _beforeSavePromises: Function[] = [];
+  private _storeElement = false;
+  private _destroyable = false;
+  private _readOnly = false;
+  private _beforeSavePromises: { (): Promise<any> }[] = [];
 
   /**
    * Default-Constructor
@@ -46,33 +45,45 @@ export class VetproviehBasicDetail extends VetproviehElement {
     }
   }
 
-  addBeforeSavePromise(promise: Function) {
+  /**
+   * Adding a beforeSave Promise which get be evaluated before save
+   * @param {function():Promise<any>} promise
+   */
+  addBeforeSavePromise(promise: { (): Promise<any> }) {
     if (promise) {
       this._beforeSavePromises.push(promise);
     }
   }
 
+  /**
+   * Execute all before Save Promises
+   * @return {Promise<any>}
+   */
   protected beforeSave(): Promise<any> {
     return Promise.all(this._beforeSavePromises.map((p) => p()));
   }
 
 
-
   /**
-     * @property {boolean} readOnly
-     */
-  get readOnly() {
+   * Getter ReadOnly
+   * @return {boolean}
+   */
+  get readOnly(): boolean {
     return this._readOnly;
   }
 
+  /**
+   * Setter Readonly
+   * @param {boolean} val
+   */
   set readOnly(val: boolean) {
     if (val !== this.readOnly) {
       this._readOnly = val;
-      console.log("Setting readonly");
-      this.getByIdFromShadowRoot("detail")?.querySelectorAll("input, select").forEach((element) => {
+      console.log('Setting readonly');
+      this.allInputs.forEach((element) => {
         (element as any).disabled = val;
-      })
-      let saveButton = this.getByIdFromShadowRoot("saveButton") as HTMLButtonElement;
+      });
+      const saveButton = this.saveButton;
       if (saveButton) {
         saveButton.disabled = val;
       }
@@ -80,34 +91,36 @@ export class VetproviehBasicDetail extends VetproviehElement {
   }
 
   /**
-     * @property {boolean} storeElement
-     */
-  get storeElement() {
+   * Getter StoreElement
+   * @return {boolean}
+   */
+  get storeElement(): boolean {
     return this._storeElement;
   }
 
   /**
-   * Setting Src
+   * Setter StoreElement
    * @param {boolean} val
    */
-  set storeElement(val) {
+  set storeElement(val: boolean) {
     if (val !== this.storeElement) {
       this._storeElement = val;
     }
   }
 
   /**
-     * @property {string|null} src
-     */
-  get src() {
+   * Getter src
+   * @return {string|null}
+   */
+  get src(): string | null {
     return this._src;
   }
 
   /**
-   * Setting Src
-   * @param {string} val
+   * Setter Src
+   * @param {string|null} val
    */
-  set src(val) {
+  set src(val: string | null) {
     if (val !== this.src) {
       this._src = val;
       this._fetchDataFromServer();
@@ -115,25 +128,26 @@ export class VetproviehBasicDetail extends VetproviehElement {
   }
 
   /**
-    * @property {boolean} src
+    * Getter destroyable
+    * @return {boolean}
     */
   get destroyable(): boolean {
     return this._destroyable;
   }
 
   /**
-   * Setting Src
+   * Setter destroyable
    * @param {boolean} val
    */
-  set destroyable(val) {
-    let valAsBoolean = val;
+  set destroyable(val: boolean) {
+    const valAsBoolean = val;
     if (valAsBoolean !== this._destroyable) {
       this._destroyable = valAsBoolean;
     }
   }
 
   /**
-   * Get Current Object
+   * Getter Current Object
    * @return {any}
    */
   get currentObject(): any {
@@ -141,6 +155,10 @@ export class VetproviehBasicDetail extends VetproviehElement {
   }
 
 
+  /**
+   * Setter Current-Object
+   * @param {any} val
+   */
   set currentObject(val: any) {
     if (this._currentObject !== val) {
       this._currentObject = val;
@@ -148,18 +166,18 @@ export class VetproviehBasicDetail extends VetproviehElement {
   }
 
   /**
-   * ID of the currentObject
-     * @property {string|undefined} id
-     */
-  get objId() {
+   * Getter ID of the currentObject
+   * @property {string|null} id
+   */
+  get objId(): string | null {
     return this._id;
   }
 
   /**
-   * Set Id of currentObject
-   * @param {string} val
+   * Setter Id of currentObject
+   * @param {string|null} val
    */
-  set objId(val) {
+  set objId(val: string | null) {
     if (val !== this.objId) {
       this._id = val;
       this._fetchDataFromServer();
@@ -187,26 +205,35 @@ export class VetproviehBasicDetail extends VetproviehElement {
      * @private
      */
   _attachListenerToButtons() {
-    console.log("Vetprovieh-Basic-Detail: Listener to Button");
-    const save = this.getByIdFromShadowRoot('saveButton') as HTMLElement;
-    const abort = this.getByIdFromShadowRoot('abortButton') as HTMLElement;
+    console.log('Vetprovieh-Basic-Detail: Listener to Button');
     const destroy = this.getByIdFromShadowRoot('destroyButton') as HTMLElement;
 
-    save.addEventListener('click', () => this.save());
+    this.saveButton.addEventListener('click', () => this.save());
 
     if (this.destroyable && destroy) {
       destroy.addEventListener('click', () => {
         if (confirm('Möchten Sie wirklich diesen Datensatz löschen')) {
-          this.destroy();
+          this.destroy().then((result) => result);
         }
-      })
+      });
     }
-    abort.addEventListener('click', () => this.goBack());
+    this.abortButton.addEventListener('click', () => this.goBack());
   }
 
+  /**
+   * Go a Page Back
+   */
   private goBack() {
     VetproviehNavParams.delete(window.location.href);
-    window.history.back()
+    window.history.back();
+  }
+
+  /**
+   * Getting Abort-Button
+   * @return {HTMLButtonElement}
+   */
+  private get abortButton(): HTMLButtonElement {
+    return this.getByIdFromShadowRoot('abortButton') as HTMLButtonElement;
   }
 
   /**
@@ -215,111 +242,132 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} type
    */
   private _showNotification(text: string, type = 'is-success') {
-    (bulmaToast as any).default.toast({
-      message: text,
-      type: type as any,
-      dismissible: false,
-      position: "bottom-center",
-      animate: { in: 'fadeIn', out: 'fadeOut' },
-    })
+    try {
+      (bulmaToast as any).default.toast({
+        message: text,
+        type: type as any,
+        dismissible: false,
+        position: 'bottom-center',
+        animate: {in: 'fadeIn', out: 'fadeOut'},
+      });
+    } catch (ex) {
+      console.error(ex);
+    }
   }
 
   /**
-     * Save-Process
-     */
-  save() : Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      if (this._validateForm()) {
+   * Save-Process
+   * @return {Promise<boolean>}
+   */
+  save(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.validateForm()) {
         this.saveWithoutValidate().then((x) => resolve(x));
       } else {
         resolve(false);
-        this._showNotification("Bitte überprüfen Sie ihre Eingaben. Nicht alle Felder sind gefüllt", "is-warning");
+        this._showNotification(
+            'Bitte überprüfen Sie ihre Eingaben. ' +
+          'Nicht alle Felder sind gefüllt',
+            'is-warning');
       }
-    })
+    });
   }
 
   /**
    * Save without Validate
+   * @return {Promise<boolean>}
    */
   protected saveWithoutValidate(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.beforeSave().then(() => {
-        const xhr = this._buildSaveRequest();
-        const _this = this;
-        xhr.onload = function () {
-          // Process our return data
-          if (xhr.status >= 200 && xhr.status < 300) {
-            // What do when the request is successful
-            console.log('success!', xhr);
-            _this._showNotification('Daten erfolgreich gespeichert');
-            _this.tryToSetId(xhr.getResponseHeader("location"));
+        this.saveRequest(this._currentObject)
+            .then((result) => {
+            // Process our return data
+              this._showNotification('Daten erfolgreich gespeichert');
+              this.tryToSetId(result.headers.get('location'));
 
-            // Destroy Cached local Data
-            VetproviehNavParams.delete(window.location.href);
-            _this.afterSave();
-            resolve(true);
-          } else {
-            // What do when the request fails
-            console.log('The request failed!');
-            _this._showNotification('Daten konnten nicht gespeichert werden.',
-              'is-danger');
-            resolve(false);
-          }
-        }.bind(this as VetproviehBasicDetail);
-
-        xhr.send(JSON.stringify(this._currentObject));
-
+              // Destroy Cached local Data
+              VetproviehNavParams.delete(window.location.href);
+              this.afterSave();
+              resolve(true);
+            })
+            .catch(() => {
+              this._showNotification(
+                  'Daten konnten nicht gespeichert werden.',
+                  'is-danger');
+              resolve(false);
+            });
       });
-    })
+    });
   }
 
+  /**
+   * AfterSave Method
+   * Could be Overwritten in Subclasses
+   */
   protected afterSave() {
-
+    console.debug('Detail - AfterSave called');
   }
 
   /**
    * Trying to set id from locationHeader
-   * @param {string| null} locationHeader 
+   * @param {string| null} locationHeader
    */
   private tryToSetId(locationHeader: string | null) {
     if (locationHeader) {
       try {
-        console.log(locationHeader);
-        let locationId = parseInt(locationHeader?.substr(locationHeader.lastIndexOf("/") + 1));
+        const locationId = parseInt(
+          locationHeader?.substr(locationHeader.lastIndexOf('/') + 1));
         this.currentObject.id = locationId;
         this._id = locationId.toString();
-      } catch (ex) {
-        console.error("Could not Set LocationId");
-        console.error(ex);
-      }
+      } catch (ex) { }
     }
   }
 
 
   /**
    * Destroy an Element
+   * @return {Promise<boolean>}
    */
-  destroy() {
-    const _this = this;
-    if (this.destroyable) {
-      fetch(this.endpoint, { method: "DELETE" }).then((response) => {
-        if (response.status === 200) {
-          _this._showNotification('Daten erfolgreich gelöscht');
-          setTimeout(() => {
-            _this.goBack();
-          }, 3000);
-        } else {
-          _this._showNotification('Daten konnten nicht gelöscht werden.',
-            'is-danger');
-        }
+  destroy() : Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.destroyable) {
+        const successFunction = (response: Response) => {
+          if (response.status === 200) {
+            this._showNotification('Daten erfolgreich gelöscht');
+            setTimeout(() => {
+              this.goBack();
+            }, 3000);
+            resolve(true);
+          } else {
+            this._showNotification(
+                'Daten konnten nicht gelöscht werden.',
+                'is-danger');
+            resolve(false);
+          }
+        };
 
-      }).catch((error) => {
-        _this._showNotification('Daten konnten nicht gelöscht werden.',
-          'is-danger');
-      })
-    }
+        const errorFunction = (error: any) => {
+          this._showNotification(
+              'Daten konnten nicht gelöscht werden.',
+              'is-danger');
+          console.error(error);
+          resolve(false);
+        };
+
+        fetch(this.endpoint, {method: 'DELETE'})
+            .then(successFunction)
+            .catch(errorFunction);
+      } else {
+        resolve(false);
+      }
+    });
   }
 
+  /**
+   * Render DestroyButton
+   * @return {string}
+   */
   get destroyButton(): string {
     if (!this.destroyable) {
       return '';
@@ -347,27 +395,32 @@ export class VetproviehBasicDetail extends VetproviehElement {
 
   /**
      * Build-Save Request for Backend
+     * @param {any} data
      * @return {XMLHttpRequest}
      * @private
      */
-  _buildSaveRequest() {
-    const xhr = new XMLHttpRequest();
+  private saveRequest(data: any): Promise<Response> {
+    let url: string = this.endpoint;
+    let method = 'POST';
 
     if (this.objId != 'new') {
-      xhr.open('PUT', this.endpoint);
-    } else {
-      xhr.open('POST', this.endpoint);
+      url += `/${this.objId}`;
+      method = 'PUT';
     }
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    return xhr;
+    return fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
   }
 
   /**
      * Validate the Form
      * @return {boolean}
-     * @private
      */
-  _validateForm() {
+  validateForm() {
     const form = this.getByIdFromShadowRoot('form') as HTMLFormElement;
     const validator = new FormtValidation();
     return validator.validateForm(form);
@@ -379,11 +432,11 @@ export class VetproviehBasicDetail extends VetproviehElement {
      * @param {string} searchValue
      */
   attachData(data: any) {
-    const detail = this.getByIdFromShadowRoot('detail') as HTMLElement;
+    const detail = this.detailDiv;
     detail.innerHTML = '';
     detail.appendChild(this._generateDetail());
     if (data) {
-      ViewHelper.replacePlaceholders(detail, data)
+      ViewHelper.replacePlaceholders(detail, data);
       this._bindFormElements(data);
       this._emitLoaded(data);
     }
@@ -391,10 +444,10 @@ export class VetproviehBasicDetail extends VetproviehElement {
 
   /**
    * Emitting loaded Event
-   * @param {any} data 
+   * @param {any} data
    */
   _emitLoaded(data: any) {
-    var event = new LoadedEvent(data);
+    const event = new LoadedEvent(data);
     this.dispatchEvent(event);
   }
 
@@ -403,7 +456,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
      * @private
      */
   _loadHtmlId() {
-    this.objId = ViewHelper.getParameter("id");
+    this.objId = ViewHelper.getParameter('id');
 
     if (!this.objId) {
       this.objId = 'new';
@@ -416,16 +469,19 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} prefix
    */
   _bindFormElements(data: any, prefix = '') {
-    console.debug("Vetprovieh-Detail: Binding Form-Elements");
+    console.debug('Vetprovieh-Detail: Binding Form-Elements');
     if (prefix == '') {
       this._currentObject = data;
     }
 
     if (this.shadowRoot != null) {
-      VetproviehBinding.bindFormElements(this.shadowRoot, data)
+      VetproviehBinding.bindFormElements(this.shadowRoot, data);
     }
   }
 
+  /**
+   * Rebinding Form if something changed inside
+   */
   public rebindForm() {
     this._bindFormElements(this._currentObject);
   }
@@ -447,22 +503,46 @@ export class VetproviehBasicDetail extends VetproviehElement {
   }
 
   // -----------------
-  // PRIVATE METHODS
+  // PRIVATE / PROTECTED METHODS
   // -----------------
+
+  /**
+   * Getting all Form Inputs from Detail
+   * @return {NodeListOf<Element>}
+   */
+  private get allInputs(): NodeListOf<Element> {
+    return this.detailDiv.querySelectorAll('input, select');
+  }
+
+  /**
+   * DetailDiv
+   * @return {HTMLDivElement}
+   */
+  private get detailDiv(): HTMLDivElement {
+    return this.getByIdFromShadowRoot('detail') as HTMLDivElement;
+  }
+
+  /**
+   * Getting the saveButton
+   * @return {HTMLButtonElement}
+   */
+  private get saveButton(): HTMLButtonElement {
+    return this.getByIdFromShadowRoot('saveButton') as HTMLButtonElement;
+  }
 
   /**
    * Overwriteable Callback
    * @param {any} data
    * @protected
    */
-  _afterFetch(data: any) {
-
+  private _afterFetch(data: any) {
+    console.debug(`Detail - afterfetch not overridden - ${data}`);
   }
 
   /**
    * Storing current Object into LocalStorage
    */
-  _storeCurrentObject() {
+  private _storeCurrentObject() {
     if (this.storeElement) {
       VetproviehNavParams.set(this._storeKey, this.currentObject);
     }
@@ -476,7 +556,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
   protected get _storeKey(): string {
     let url = window.location.origin + window.location.pathname;
     if (this.objId != 'new') {
-      url += "?id=" + this.objId;
+      url += '?id=' + this.objId;
     }
     return url;
   }
@@ -485,8 +565,9 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * Loading Data from Remote-Server
    * @private
    */
-  _fetchDataFromServer() {
+  private _fetchDataFromServer() {
     if (this.objId && this.src) {
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this;
       let endpoint = 'new.json';
       let localObject = null;
@@ -503,10 +584,14 @@ export class VetproviehBasicDetail extends VetproviehElement {
         self._afterFetch(localObject);
       } else {
         fetch(endpoint)
-          .then((response) => response.json())
-          .then((data) => { self.attachData(data); return data })
-          .then((data) => { console.log(data); return self._afterFetch(data) })
-          .catch((error) => console.log(error));
+            .then((response) => response.json())
+            .then((data) => {
+              self.attachData(data); return data;
+            })
+            .then((data) => {
+              console.log(data); return self._afterFetch(data);
+            })
+            .catch((error) => console.log(error));
       }
     }
   }

@@ -40,7 +40,7 @@ describe("type", () => {
 });
 
 describe("display", function(){
-    test("should show for 4 Seconds", () => {
+    test("should show for 4 Seconds", (done) => {
         const notification = new VetproviehNotification();
         notification.connectedCallback();
         
@@ -53,6 +53,9 @@ describe("display", function(){
         setTimeout(() => expect(shadowRoot.innerHTML).not.toMatch("is-hidden"), 1001);
 
         // Should Hide itself
-        setTimeout(() => expect(shadowRoot.innerHTML).toMatch("is-hidden"), 4001);
+        setTimeout(() => {
+            expect(shadowRoot.innerHTML).toMatch("is-hidden")
+            done()
+        }, 4001);
     })
 })

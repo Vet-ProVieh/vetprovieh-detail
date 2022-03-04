@@ -1,8 +1,9 @@
-import { WebComponent, VetproviehElement } from '@tomuench/vetprovieh-shared/lib';
+import {
+  WebComponent,
+  VetproviehElement}
+  from '@vetprovieh/vetprovieh-shared/lib';
 
-/**
- * Notification
- */
+// eslint-disable-next-line new-cap
 @WebComponent({
   template: VetproviehElement.template + `
   <style>
@@ -19,12 +20,15 @@ import { WebComponent, VetproviehElement } from '@tomuench/vetprovieh-shared/lib
       </div>
   </div>
 `,
-  tag: 'vetprovieh-notification'
+  tag: 'vetprovieh-notification',
 })
+/**
+ * Notifications
+ * tag: 'vetprovieh-notification'
+ */
 export class VetproviehNotification extends VetproviehElement {
-
-  private _text: string = "";
-  private _type: string = 'is-primary';
+  private _text = '';
+  private _type = 'is-primary';
 
   /**
    * Default-Constructor

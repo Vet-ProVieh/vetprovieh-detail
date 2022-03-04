@@ -1,9 +1,10 @@
 {
-  "name": "@tomuench/vetprovieh-detail",
+  "name": "@vetprovieh/vetprovieh-detail",
   "description": "Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.",
+  "license": "Apache License 2.0",
   "author": {
     "name": "Tobias Münch",
-    "email": "tobias.muench@hs-osnabrueck.de",
+    "email": "t.muench@hs-osnabrueck.de",
     "url": "https://github.com/Vet-ProVieh/vetprovieh-detail"
   },
   "repository": {
@@ -14,19 +15,18 @@
   "types": "dist/vetprovieh-detail.d.ts",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.13.0",
-    "@tomuench/formt-validation": "file:../formt-validation",
-    "@tomuench/vetprovieh-shared": "file:../vetprovieh-shared",
+    "@vetprovieh/formt-validation": "^0.0.1",
+    "@vetprovieh/vetprovieh-shared": "^1.0.1",
     "bulma": "^0.8.2",
     "bulma-toast": "^2.2.0"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^13.0.0",
-    "@rollup/plugin-node-resolve": "^8.1.0",
-    "rollup-plugin-typescript": "^1.0.1",
     "@babel/core": "^7.10.1",
     "@babel/plugin-transform-modules-commonjs": "^7.10.1",
     "@babel/preset-env": "^7.10.1",
     "@babel/preset-typescript": "^7.10.1",
+    "@rollup/plugin-commonjs": "^13.0.0",
+    "@rollup/plugin-node-resolve": "^8.1.0",
     "@types/jest": "^25.2.3",
     "@types/node-fetch": "^2.5.7",
     "@typescript-eslint/eslint-plugin": "^3.0.2",
@@ -38,6 +38,7 @@
     "http-server": "^0.12.3",
     "jest": "^26.0.1",
     "jest-fetch-mock": "^3.0.3",
+    "rollup-plugin-typescript": "^1.0.1",
     "ts-jest": "^26.0.0",
     "typescript": "^3.9.3"
   },
