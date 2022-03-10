@@ -7,6 +7,7 @@ import {
 import {FormtValidation} from '@vetprovieh/formt-validation';
 import {LoadedEvent} from './loaded-event';
 import * as bulmaToast from 'bulma-toast';
+import {VetproviehConnection} from './vetprovieh-connection';
 /**
  * `vetprovieh-detail`
  * Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.
@@ -22,8 +23,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
     return ['destroyable', 'src', 'objId'];
   }
 
-  private _src: string | null = null;
-  private _id: string | null = null;
   protected _currentObject: any = {};
   private _detailTemplate: DocumentFragment | undefined;
 
@@ -31,6 +30,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
   private _destroyable = false;
   private _readOnly = false;
   private _beforeSavePromises: { (): Promise<any> }[] = [];
+  private _connection: VetproviehConnection = new VetproviehConnection();
 
   /**
    * Default-Constructor
@@ -113,7 +113,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @return {string|null}
    */
   get src(): string | null {
-    return this._src;
+    return this._connection.src;
   }
 
   /**
@@ -122,7 +122,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    */
   set src(val: string | null) {
     if (val !== this.src) {
-      this._src = val;
+      this._connection.src = val;
       this._fetchDataFromServer();
     }
   }
@@ -170,7 +170,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @property {string|null} id
    */
   get objId(): string | null {
-    return this._id;
+    return this._connection.objId;
   }
 
   /**
@@ -179,7 +179,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    */
   set objId(val: string | null) {
     if (val !== this.objId) {
-      this._id = val;
+      this._connection.objId = val;
       this._fetchDataFromServer();
     }
   }
@@ -280,7 +280,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
   protected saveWithoutValidate(): Promise<boolean> {
     return new Promise((resolve) => {
       this.beforeSave().then(() => {
-        this.saveRequest(this._currentObject)
+        this._connection.save(this._currentObject)
             .then((result) => {
             // Process our return data
               this._showNotification('Daten erfolgreich gespeichert');
@@ -319,7 +319,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
         const locationId = parseInt(
           locationHeader?.substr(locationHeader.lastIndexOf('/') + 1));
         this.currentObject.id = locationId;
-        this._id = locationId.toString();
+        this.objId = locationId.toString();
       } catch (ex) { }
     }
   }
@@ -332,21 +332,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
   destroy() : Promise<boolean> {
     return new Promise((resolve) => {
       if (this.destroyable) {
-        const successFunction = (response: Response) => {
-          if (response.status === 200) {
-            this._showNotification('Daten erfolgreich gelöscht');
-            setTimeout(() => {
-              this.goBack();
-            }, 3000);
-            resolve(true);
-          } else {
-            this._showNotification(
-                'Daten konnten nicht gelöscht werden.',
-                'is-danger');
-            resolve(false);
-          }
-        };
-
         const errorFunction = (error: any) => {
           this._showNotification(
               'Daten konnten nicht gelöscht werden.',
@@ -355,9 +340,19 @@ export class VetproviehBasicDetail extends VetproviehElement {
           resolve(false);
         };
 
-        fetch(this.endpoint, {method: 'DELETE'})
-            .then(successFunction)
-            .catch(errorFunction);
+        this._connection.destroy().then((result) => {
+          if (result) {
+            this._showNotification('Daten erfolgreich gelöscht');
+            setTimeout(() => {
+              this.goBack();
+            }, 3000);
+          } else {
+            this._showNotification(
+                'Daten konnten nicht gelöscht werden.',
+                'is-danger');
+          }
+          resolve(result);
+        }).catch(errorFunction);
       } else {
         resolve(false);
       }
@@ -381,40 +376,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
     `;
   }
 
-  /**
-   * Current Endpoint
-   * @return {string}
-   */
-  private get endpoint(): string {
-    if (this.objId != 'new') {
-      return this.src + '/' + this.objId;
-    } else {
-      return this.src as string;
-    }
-  }
-
-  /**
-     * Build-Save Request for Backend
-     * @param {any} data
-     * @return {XMLHttpRequest}
-     * @private
-     */
-  private saveRequest(data: any): Promise<Response> {
-    let url: string = this.endpoint;
-    let method = 'POST';
-
-    if (this.objId != 'new') {
-      url += `/${this.objId}`;
-      method = 'PUT';
-    }
-    return fetch(url, {
-      method: method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-  }
 
   /**
      * Validate the Form
@@ -566,7 +527,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @private
    */
   private _fetchDataFromServer() {
-    if (this.objId && this.src) {
+    if (this._connection.isReady) {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this;
       let endpoint = 'new.json';
@@ -595,8 +556,4 @@ export class VetproviehBasicDetail extends VetproviehElement {
       }
     }
   }
-
-  // -----------------
-  // CLASS METHODS
-  // -----------------
 }
