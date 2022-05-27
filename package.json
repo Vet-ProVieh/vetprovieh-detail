@@ -2,7 +2,7 @@
   "name": "@vetprovieh/vetprovieh-detail",
   "description": "Detail-Frame for Read, Create and Update Entities. Used in Vet:Provieh.",
   "license": "Apache License 2.0",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": {
     "name": "Tobias Münch",
     "email": "t.muench@hs-osnabrueck.de",
