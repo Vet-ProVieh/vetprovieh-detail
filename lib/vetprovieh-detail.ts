@@ -1,7 +1,7 @@
 import {
   VetproviehElement,
   WebComponent,
-} from '@vetprovieh/vetprovieh-shared/lib/index';
+} from '@vetprovieh/vetprovieh-shared';
 import {VetproviehBasicDetail} from './vetprovieh-basic-detail';
 
 // eslint-disable-next-line new-cap

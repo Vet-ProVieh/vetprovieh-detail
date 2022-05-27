@@ -3,7 +3,7 @@ import {
   VetproviehElement,
   VetproviehNavParams,
   ViewHelper,
-} from '@vetprovieh/vetprovieh-shared/lib/index';
+} from '@vetprovieh/vetprovieh-shared';
 import {FormtValidation} from '@vetprovieh/formt-validation';
 import {LoadedEvent} from './loaded-event';
 import * as bulmaToast from 'bulma-toast';
@@ -15,14 +15,6 @@ import {VetproviehConnection} from './vetprovieh-connection';
  * @customElement
  */
 export class VetproviehBasicDetail extends VetproviehElement {
-  /**
-       * Observed attributes
-       * @return {Array<string>}
-       */
-  static get observedAttributes() {
-    return ['destroyable', 'src', 'objId'];
-  }
-
   protected _currentObject: any = {};
   private _detailTemplate: DocumentFragment | undefined;
 
@@ -45,6 +37,13 @@ export class VetproviehBasicDetail extends VetproviehElement {
     }
   }
 
+  /**
+       * Observed attributes
+       * @return {string[]}
+       */
+  static get observedAttributes() :string[] {
+    return ['destroyable', 'src', 'objId'];
+  }
   /**
    * Adding a beforeSave Promise which get be evaluated before save
    * @param {function():Promise<any>} promise
@@ -79,7 +78,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
   set readOnly(val: boolean) {
     if (val !== this.readOnly) {
       this._readOnly = val;
-      console.log('Setting readonly');
       this.allInputs.forEach((element) => {
         (element as any).disabled = val;
       });
@@ -205,7 +203,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
      * @private
      */
   _attachListenerToButtons() {
-    console.log('Vetprovieh-Basic-Detail: Listener to Button');
     const destroy = this.getByIdFromShadowRoot('destroyButton') as HTMLElement;
 
     this.saveButton.addEventListener('click', () => this.save());
@@ -430,7 +427,6 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {string} prefix
    */
   _bindFormElements(data: any, prefix = '') {
-    console.debug('Vetprovieh-Detail: Binding Form-Elements');
     if (prefix == '') {
       this._currentObject = data;
     }
@@ -496,7 +492,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
    * @param {any} data
    * @protected
    */
-  private _afterFetch(data: any) {
+  protected _afterFetch(data: any) {
     console.debug(`Detail - afterfetch not overridden - ${data}`);
   }
 

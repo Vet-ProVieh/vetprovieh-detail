@@ -1,4 +1,9 @@
-/node_modules/
-/.idea/
-/coverage
-/.vscode
+bower_components/
+node_modules/
+.idea/
+.vscode/
+.scannerwork/
+coverage/
+.rollup.cache
+dist/
+tsconfig.tsbuildinfo
