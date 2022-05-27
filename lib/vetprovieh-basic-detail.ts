@@ -314,7 +314,7 @@ export class VetproviehBasicDetail extends VetproviehElement {
     if (locationHeader) {
       try {
         const locationId = parseInt(
-          locationHeader?.substr(locationHeader.lastIndexOf('/') + 1));
+            locationHeader?.substr(locationHeader.lastIndexOf('/') + 1));
         this.currentObject.id = locationId;
         this.objId = locationId.toString();
       } catch (ex) { }
